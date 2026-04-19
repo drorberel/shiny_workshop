@@ -1,0 +1,373 @@
+---
+title: "Shiny Modules: From One App to Reusable Pieces"
+format:
+  html:
+    toc: true
+    code-fold: false
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+---
+
+# Learning goals
+
+By the end of this lesson, you should be able to:
+
+- explain what a Shiny module is
+- recognize when regular Shiny code becomes repetitive
+- turn a repeated UI + server pattern into a module
+- reuse the same module more than once in one app
+
+# What problem are modules solving?
+
+In a small Shiny app, it is common to write everything in one place:
+
+- all UI controls in one `fluidPage()`
+- all server logic in one `server <- function(input, output, session)`
+
+That is fine for small apps.
+
+As the app grows, a few problems usually appear:
+
+- repeated UI patterns
+- repeated server logic
+- harder-to-read code
+- input and output names that start colliding
+
+Modules help by packaging a piece of UI and server logic together so it can be reused.
+
+# Step 1: Traditional approach, no modules
+
+Here is a simple app with one dataset selector and one numeric summary.
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("No modules"),
+  selectInput("dataset", "Choose a dataset", choices = c("mtcars", "iris")),
+  selectInput("variable", "Choose a numeric variable", choices = NULL),
+  verbatimTextOutput("summary")
+)
+
+server <- function(input, output, session) {
+  data_reactive <- reactive({
+    get(input$dataset)
+  })
+
+  observeEvent(data_reactive(), {
+    numeric_vars <- names(data_reactive())[sapply(data_reactive(), is.numeric)]
+    updateSelectInput(session, "variable", choices = numeric_vars, selected = numeric_vars[1])
+  }, ignoreInit = FALSE)
+
+  output$summary <- renderPrint({
+    req(input$variable)
+    summary(data_reactive()[[input$variable]])
+  })
+}
+
+shinyApp(ui, server)
+```
+
+This works well.
+
+But what if we want to show the same pattern twice in the same app?
+
+- select a dataset
+- select a numeric variable
+- print a summary
+
+Without modules, we usually copy and paste.
+
+# Step 2: Repeating the traditional approach
+
+This next app has the same feature twice.
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Repeated pattern without modules"),
+  fluidRow(
+    column(
+      width = 6,
+      h3("Panel A"),
+      selectInput("dataset_a", "Choose a dataset", choices = c("mtcars", "iris")),
+      selectInput("variable_a", "Choose a numeric variable", choices = NULL),
+      verbatimTextOutput("summary_a")
+    ),
+    column(
+      width = 6,
+      h3("Panel B"),
+      selectInput("dataset_b", "Choose a dataset", choices = c("mtcars", "iris")),
+      selectInput("variable_b", "Choose a numeric variable", choices = NULL),
+      verbatimTextOutput("summary_b")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  data_a <- reactive({
+    get(input$dataset_a)
+  })
+
+  observeEvent(data_a(), {
+    numeric_vars <- names(data_a())[sapply(data_a(), is.numeric)]
+    updateSelectInput(session, "variable_a", choices = numeric_vars, selected = numeric_vars[1])
+  }, ignoreInit = FALSE)
+
+  output$summary_a <- renderPrint({
+    req(input$variable_a)
+    summary(data_a()[[input$variable_a]])
+  })
+
+  data_b <- reactive({
+    get(input$dataset_b)
+  })
+
+  observeEvent(data_b(), {
+    numeric_vars <- names(data_b())[sapply(data_b(), is.numeric)]
+    updateSelectInput(session, "variable_b", choices = numeric_vars, selected = numeric_vars[1])
+  }, ignoreInit = FALSE)
+
+  output$summary_b <- renderPrint({
+    req(input$variable_b)
+    summary(data_b()[[input$variable_b]])
+  })
+}
+
+shinyApp(ui, server)
+```
+
+This is still valid Shiny code, but now we can already see the problem:
+
+- the structure is duplicated
+- naming becomes awkward: `_a`, `_b`, `_c`, ...
+- every future change has to be made in multiple places
+
+# Step 3: Turn the repeated pattern into a module
+
+A Shiny module usually has two parts:
+
+- a UI function
+- a server function
+
+The UI function uses `NS()` to namespace input and output IDs.
+
+The server function uses `moduleServer()` to create a private server scope for that module instance.
+
+## Module version
+
+```{r}
+library(shiny)
+
+summaryModuleUI <- function(id, title = "Summary panel") {
+  ns <- NS(id)
+
+  tagList(
+    h3(title),
+    selectInput(ns("dataset"), "Choose a dataset", choices = c("mtcars", "iris")),
+    selectInput(ns("variable"), "Choose a numeric variable", choices = NULL),
+    verbatimTextOutput(ns("summary"))
+  )
+}
+
+summaryModuleServer <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    data_reactive <- reactive({
+      get(input$dataset)
+    })
+
+    observeEvent(data_reactive(), {
+      numeric_vars <- names(data_reactive())[sapply(data_reactive(), is.numeric)]
+      updateSelectInput(session, "variable", choices = numeric_vars, selected = numeric_vars[1])
+    }, ignoreInit = FALSE)
+
+    output$summary <- renderPrint({
+      req(input$variable)
+      summary(data_reactive()[[input$variable]])
+    })
+  })
+}
+
+ui <- fluidPage(
+  titlePanel("Using one module twice"),
+  fluidRow(
+    column(width = 6, summaryModuleUI("left_panel", "Panel A")),
+    column(width = 6, summaryModuleUI("right_panel", "Panel B"))
+  )
+)
+
+server <- function(input, output, session) {
+  summaryModuleServer("left_panel")
+  summaryModuleServer("right_panel")
+}
+
+shinyApp(ui, server)
+```
+
+# Why this is better
+
+Now the repeated feature is defined once and reused twice.
+
+Benefits:
+
+- less copy-paste
+- cleaner naming
+- easier maintenance
+- easier testing
+- easier to build larger dashboards from smaller parts
+
+The important idea is that each module instance gets its own namespace.
+
+That means these are different internally:
+
+- `left_panel-dataset`
+- `right_panel-dataset`
+
+You write one module, but Shiny keeps each instance separate.
+
+# Short proof-of-concept examples
+
+These are intentionally small.
+
+## Proof of concept 1: A tiny text module
+
+This example shows the basic shape of a reusable module.
+
+```{r}
+library(shiny)
+
+textEchoUI <- function(id) {
+  ns <- NS(id)
+
+  tagList(
+    textInput(ns("txt"), "Type something"),
+    textOutput(ns("out"))
+  )
+}
+
+textEchoServer <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    output$out <- renderText({
+      paste("You typed:", input$txt)
+    })
+  })
+}
+
+ui <- fluidPage(
+  textEchoUI("one"),
+  hr(),
+  textEchoUI("two")
+)
+
+server <- function(input, output, session) {
+  textEchoServer("one")
+  textEchoServer("two")
+}
+
+shinyApp(ui, server)
+```
+
+## Proof of concept 2: A reusable plot module
+
+This one is closer to a dashboard building block.
+
+```{r}
+library(shiny)
+
+histogramUI <- function(id, title = "Histogram") {
+  ns <- NS(id)
+
+  tagList(
+    h4(title),
+    sliderInput(ns("bins"), "Bins", min = 5, max = 50, value = 15),
+    plotOutput(ns("plot"))
+  )
+}
+
+histogramServer <- function(id, data, var) {
+  moduleServer(id, function(input, output, session) {
+    output$plot <- renderPlot({
+      hist(data()[[var]], breaks = input$bins, col = "steelblue", border = "white")
+    })
+  })
+}
+
+ui <- fluidPage(
+  fluidRow(
+    column(width = 6, histogramUI("mpg_plot", "Miles per gallon")),
+    column(width = 6, histogramUI("hp_plot", "Horsepower"))
+  )
+)
+
+server <- function(input, output, session) {
+  data_reactive <- reactive(mtcars)
+
+  histogramServer("mpg_plot", data = data_reactive, var = "mpg")
+  histogramServer("hp_plot", data = data_reactive, var = "hp")
+}
+
+shinyApp(ui, server)
+```
+
+# A dashboard mindset
+
+In dashboards, modules are especially useful because dashboards often repeat patterns such as:
+
+- filter panels
+- value boxes
+- plots with the same controls
+- tables with the same formatting
+- cards with similar layout and behavior
+
+Instead of treating the dashboard as one big app, you can think of it as a set of reusable building blocks.
+
+# Practical rule of thumb
+
+You probably do not need a module when:
+
+- the app is very small
+- the logic appears only once
+- the code is still easy to read
+
+You should consider a module when:
+
+- the same pattern appears more than once
+- a section of the app feels like a self-contained component
+- naming conflicts are becoming annoying
+- you want to reuse a feature across multiple apps
+
+# One more small improvement
+
+Modules can also return values.
+
+For example, a filter module could return:
+
+- a selected date range
+- a selected category
+- a filtered dataset
+
+That makes modules useful not just for display, but also for communication between parts of a larger app.
+
+# Exercise ideas
+
+Try these small changes:
+
+1. Add `faithful` as another dataset option.
+2. Modify the module so it shows both `summary()` and a histogram.
+3. Reuse the histogram module three times instead of two.
+4. Create a module for a shared sidebar filter.
+
+# Key takeaway
+
+Modules are not magic.
+
+They are just a way to package:
+
+- UI
+- server logic
+- namespacing
+
+That makes repeated Shiny patterns easier to reuse and maintain, which is especially helpful when building dashboards.
