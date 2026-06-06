@@ -12,10 +12,16 @@ Basic R/Shiny
 
 # Materials
 
-[shiny-modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)\]
-[crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
+[HTML_Rendering](https://drorberel.github.io/shiny_workshop/01_HTML_rendering.html)
+
+[Shiny
+Modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)
+
+[Crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
+
 [htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
-[HTML_rendering](https://drorberel.github.io/shiny_workshop/04_HTML_rendering.html)
+
+…
 
 # Licensing Info
 
