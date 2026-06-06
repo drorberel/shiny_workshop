@@ -1,8 +1,6 @@
 # Advanced R Shiny - Workshop @ Cascadia R Conference 2026
 
 
-Advanced Shiny @ Cascadia R Conference 2026
-
 This repository contains the materials used for the workshops I am
 giving at Cascadia R Conference 2026.
 
@@ -11,6 +9,13 @@ giving at Cascadia R Conference 2026.
 Basic R/Shiny
 
 # Getting Started
+
+# Materials
+
+[shiny-modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)\]
+[crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
+[htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
+[HTML_rendering](https://drorberel.github.io/shiny_workshop/04_HTML_rendering.html)
 
 # Licensing Info
 
