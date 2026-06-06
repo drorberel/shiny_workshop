@@ -4146,8 +4146,8 @@ HTMLWidgets.widget({
   }
 });
     </script>
-<div id="htmlwidget-2186368e2f2637c026d4" style="width:100%;height:260px;" class="miniBars html-widget"></div>
-<script type="application/json" data-for="htmlwidget-2186368e2f2637c026d4">{"x":{"rows":{"key":["1","2","3","4","5"],"label":["Apple","Banana","Blueberry","Orange","Pear"],"value":[10,16,7,12,5]},"group":null},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-7cb30a046a804201a38d" style="width:100%;height:260px;" class="miniBars html-widget"></div>
+<script type="application/json" data-for="htmlwidget-7cb30a046a804201a38d">{"x":{"rows":{"key":["1","2","3","4","5"],"label":["Apple","Banana","Blueberry","Orange","Pear"],"value":[10,16,7,12,5]},"group":null},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </section>
@@ -4159,6 +4159,7 @@ HTMLWidgets.widget({
 <li>place <code>miniBarsOutput()</code> where the widget should appear</li>
 <li>return <code>mini_bars()</code> from <code>renderMiniBars()</code></li>
 </ul>
+<p>This chunk is marked <code>eval=FALSE</code>, so the rendered Quarto document shows the app source code instead of launching a Shiny app while rendering. Run it interactively after running the widget-definition chunk above.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(htmlwidgets)</span>
@@ -4186,7 +4187,8 @@ HTMLWidgets.widget({
 <span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>  })</span>
 <span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>app <span class="ot">&lt;-</span> <span class="fu">shinyApp</span>(ui, server)</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>app</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="crosstalk-call" class="level2">
@@ -4370,8 +4372,8 @@ HTMLWidgets.widget({
 </div>
 </div>
 <div class="col-xs-9">
-<div id="htmlwidget-3181081de49726f607e2" style="width:100%;height:260px;" class="miniBars html-widget"></div>
-<script type="application/json" data-for="htmlwidget-3181081de49726f607e2">{"x":{"rows":{"key":["Apple","Banana","Blueberry","Orange","Pear"],"label":["Apple","Banana","Blueberry","Orange","Pear"],"value":[10,16,7,12,5]},"group":"fruit"},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-ed4127d89c6c7b96223e" style="width:100%;height:260px;" class="miniBars html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ed4127d89c6c7b96223e">{"x":{"rows":{"key":["Apple","Banana","Blueberry","Orange","Pear"],"label":["Apple","Banana","Blueberry","Orange","Pear"],"value":[10,16,7,12,5]},"group":"fruit"},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </div>
@@ -4445,7 +4447,8 @@ HTMLWidgets.widget({
 <span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>  })</span>
 <span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>app <span class="ot">&lt;-</span> <span class="fu">shinyApp</span>(ui, server)</span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>app</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="what-to-notice" class="level2">

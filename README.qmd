@@ -8,9 +8,65 @@ This repository contains the materials used for the workshops I am giving at Cas
 
 # Requirements
 
-Basic R/Shiny
+Basic experience in Shiny. Understanding what is a shiny ‘module’.
 
-# Getting Started
+# Pre-Installations:
+
+Basic R/Shiny setup (R, RStudio, Shiny package, etc.)\
+Also recommended (but not mandatory): LLM pre-installed in your IDE of preference (free co-pilot via github is ok)
+
+Shiny modules - deeper use cases. Demonstrate meta-ui eco-systems such as Pharmaverse/Teal. Participants will plug their own datasets into the framework and leverage built-in features.\
+Will also write compatible Teal modules from scratch, and modify existing modules. <https://github.com/pharmaverse/tealworkshop-shinygathering2024/tree/main/code>
+
+<https://phuse-org.github.io/teal-enhancements/>
+
+Enterprise-ready dashboards: walk-through r2d3 and JS integration for drill-down feature <https://solutions.posit.co/connections/db/best-practices/dashboards/>
+
+[Crosstalk](https://rstudio.github.io/crosstalk/shiny.html)
+
+extended UI or server components: bslib, and others
+
+<https://github.com/nanxstats/awesome-shiny-extensions>
+
+Rhino framework: <https://appsilon.github.io/rhino/>
+
+Other: <https://github.com/grabear/awesome-rshiny>
+
+# What to expect:
+
+## **Workshop Format: The Build-Along**
+
+This session is designed for practitioners who want to move past theory and into implementation. We’ve scrapped the slide deck in favor of a **live, documentation-driven workflow** that mirrors how real-world development actually happens.
+
+### **1. Tool Evaluation & Selection**
+
+Instead of a "one size fits all" tutorial, you will identify a specific feature needed for your current project.
+
+- **Compare & Contrast:** We will demonstrate how to evaluate different Shiny extensions and packages that solve similar problems.
+
+- **Strategic Selection:** Learn the criteria for choosing a tool - community support, ease of integration, and performance.
+
+### **2. AI-Accelerated Prototyping**
+
+We will leverage LLMs as a "senior pair programmer" to bridge the gap between an idea and a working demo.
+
+- **On-the-Fly Demos:** Watch (and participate) as we use LLMs to generate boilerplate code and complex UI components in seconds.
+
+- **Rapid Troubleshooting:** See how to use AI to debug integration issues and interpret documentation errors in real-time.
+
+### **3. Live Integration**
+
+Bring your own project, data, or dashboard. The goal is to leave the session with a functional "proof of concept" embedded in your own work.
+
+- **Docs-First Learning:** We will navigate official developer documentation together, ensuring you learn how to find answers long after the workshop ends.
+
+- **Collaborative Building:** Get hands-on help as you experiment with your chosen feature.
+
+### **What You’ll Need**
+
+- **A Project:** An existing dashboard, a dataset, or even just a clear idea of a feature you want to build.
+
+- **Curiosity:** The direction of the workshop is driven by your questions and the tools you choose to explore.
 
 # Materials
 

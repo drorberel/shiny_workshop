@@ -246,6 +246,10 @@ In Shiny, the pattern is the same as other htmlwidgets:
 - place `miniBarsOutput()` where the widget should appear
 - return `mini_bars()` from `renderMiniBars()`
 
+This chunk is marked `eval=FALSE`, so the rendered Quarto document shows
+the app source code instead of launching a Shiny app while rendering. Run
+it interactively after running the widget-definition chunk above.
+
 ```{r, eval=FALSE}
 library(shiny)
 library(htmlwidgets)
@@ -273,7 +277,8 @@ server <- function(input, output, session) {
   })
 }
 
-shinyApp(ui, server)
+app <- shinyApp(ui, server)
+app
 ```
 
 ## Crosstalk Call
@@ -391,7 +396,8 @@ server <- function(input, output, session) {
   })
 }
 
-shinyApp(ui, server)
+app <- shinyApp(ui, server)
+app
 ```
 
 ## What To Notice
