@@ -1,13 +1,18 @@
 ---
 title: "Shiny Modules: From One App to Reusable Pieces"
+author: "Dror Berel"
 format:
   html:
     toc: true
     code-fold: false
+    self-contained: true
 execute:
   echo: true
 editor_options: 
   chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
 ---
 
 # Learning goals
@@ -35,7 +40,26 @@ As the app grows, a few problems usually appear:
 - harder-to-read code
 - input and output names that start colliding
 
-Modules help by packaging a piece of UI and server logic together so it can be reused.
+Modules help by packaging a piece of UI and server logic together so it
+can be reused. A shiny module is a way to bind together UI and server
+logic into a reusable component, as a function. This allows you to
+create self-contained pieces of functionality that can be easily reused
+across different parts of your app or even across different apps. The
+binding is done through namespacing, which ensures that the inputs and
+outputs of each module instance do not conflict with each other. In
+practice, it means you add to the UI part: `ns <- NS(id)`
+
+Then, instead of calling
+
+`selectInput("dataset", "Choose a dataset", choices = c("mtcars", "iris"))`
+
+you call:
+
+`selectInput(ns("dataset"), "Choose a dataset", choices = c("mtcars", "iris"))`
+
+In other words, a module allows you to create a mini Shiny app within
+your main app, with its own UI and server logic, that can be
+instantiated multiple times without worrying about naming conflicts.
 
 # Step 1: Traditional approach, no modules
 
@@ -155,7 +179,8 @@ A Shiny module usually has two parts:
 
 The UI function uses `NS()` to namespace input and output IDs.
 
-The server function uses `moduleServer()` to create a private server scope for that module instance.
+The server function uses `moduleServer()` to create a private server
+scope for that module instance.
 
 ## Module version
 
@@ -314,7 +339,8 @@ shinyApp(ui, server)
 
 # A dashboard mindset
 
-In dashboards, modules are especially useful because dashboards often repeat patterns such as:
+In dashboards, modules are especially useful because dashboards often
+repeat patterns such as:
 
 - filter panels
 - value boxes
@@ -322,7 +348,8 @@ In dashboards, modules are especially useful because dashboards often repeat pat
 - tables with the same formatting
 - cards with similar layout and behavior
 
-Instead of treating the dashboard as one big app, you can think of it as a set of reusable building blocks.
+Instead of treating the dashboard as one big app, you can think of it as
+a set of reusable building blocks.
 
 # Practical rule of thumb
 
@@ -349,16 +376,17 @@ For example, a filter module could return:
 - a selected category
 - a filtered dataset
 
-That makes modules useful not just for display, but also for communication between parts of a larger app.
+That makes modules useful not just for display, but also for
+communication between parts of a larger app.
 
 # Exercise ideas
 
 Try these small changes:
 
-1. Add `faithful` as another dataset option.
-2. Modify the module so it shows both `summary()` and a histogram.
-3. Reuse the histogram module three times instead of two.
-4. Create a module for a shared sidebar filter.
+1.  Add `faithful` as another dataset option.
+2.  Modify the module so it shows both `summary()` and a histogram.
+3.  Reuse the histogram module three times instead of two.
+4.  Create a module for a shared sidebar filter.
 
 # Key takeaway
 
@@ -370,4 +398,9 @@ They are just a way to package:
 - server logic
 - namespacing
 
-That makes repeated Shiny patterns easier to reuse and maintain, which is especially helpful when building dashboards.
+That makes repeated Shiny patterns easier to reuse and maintain, which
+is especially helpful when building dashboards.
+
+
+## Additional Resources
+<https://github.com/drorberel/ComplexHeatmapTeal>

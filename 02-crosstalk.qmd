@@ -1,0 +1,381 @@
+---
+title: "crosstalk + shiny"
+author: "Dror Berel"
+format:
+  html:
+    toc: true
+    code-fold: false
+    self-contained: true
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+## Goal
+
+This tutorial builds an interactive R app that combines:
+
+- `crosstalk` for linked filtering across widgets.
+- `plotly` for an interactive scatter plot.
+- `DT` for an interactive data table.
+- `shiny` for reactive app state and layout.
+
+`crosstalk` is useful when multiple HTML widgets should respond to the
+same client-side filters. Shiny is useful when the app needs server-side
+reactivity, custom logic, downloads, modeling, database queries, or
+user-driven computation.
+
+## Packages
+
+Install these packages if needed:
+
+```{r}
+# install.packages(c("shiny", "crosstalk", "plotly", "DT", "dplyr", "bslib"))
+```
+
+Load the packages:
+
+```{r}
+library(shiny)
+library(crosstalk)
+library(plotly)
+library(DT)
+library(dplyr)
+library(bslib)
+```
+
+## The Data
+
+This tutorial uses `mtcars` because it ships with R. We add a car name
+column and convert a few variables into labels that make better filters.
+
+```{r}
+cars <- mtcars |>
+  tibble::rownames_to_column("car") |>
+  mutate(
+    cyl = factor(cyl, levels = c(4, 6, 8), labels = c("4 cylinders", "6 cylinders", "8 cylinders")),
+    am = factor(am, levels = c(0, 1), labels = c("Automatic", "Manual")),
+    gear = factor(gear)
+  )
+
+head(cars)
+```
+
+## Crosstalk Basics
+
+The key object is `SharedData`. Widgets that use the same `SharedData`
+object can be filtered together in the browser.
+
+```{r}
+shared_cars <- SharedData$new(
+  data = cars,
+  key = ~car,
+  group = "cars"
+)
+```
+
+Important arguments:
+
+- `data`: the data frame to share across widgets.
+- `key`: a stable row identifier. Here, the car name identifies each
+  row.
+- `group`: a name that lets filters and widgets know they belong
+  together.
+
+## A Static Crosstalk Example
+
+This example works in a normal rendered Quarto HTML file. It does not
+need a Shiny server because the filtering happens in the browser.
+
+```{r}
+crosstalk::bscols(
+  widths = c(3, 9),
+  list(
+    crosstalk::filter_select(
+      id = "cyl_filter_static",
+      label = "Cylinders",
+      sharedData = shared_cars,
+      group = ~cyl,
+      multiple = TRUE
+    ),
+    crosstalk::filter_slider(
+      id = "mpg_filter_static",
+      label = "Miles per gallon",
+      sharedData = shared_cars,
+      column = ~mpg,
+      step = 1
+    )
+  ),
+  plotly::plot_ly(
+    shared_cars,
+    x = ~wt,
+    y = ~mpg,
+    color = ~cyl,
+    text = ~car,
+    type = "scatter",
+    mode = "markers"
+  ) |>
+    layout(
+      xaxis = list(title = "Weight"),
+      yaxis = list(title = "Miles per gallon")
+    )
+)
+```
+
+It use a plotly scatter plot and two Crosstalk filters. The filters work together to control which points are visible in the plot. The filtering happens in the
+browser, so no Shiny server is needed for this example.
+Plotly is used here because it has built-in Crosstalk support, meaning that it can automatically respond to Crosstalk filters when given a `SharedData` object.
+at the back end, plotly creates a JavaScript widget that listens for changes to the `SharedData` and updates the plot accordingly.  
+
+
+Many other HTML widgets also work with Crosstalk. Some examples include DT tables, leaflet maps, and htmlwidgets that support Crosstalk. 
+That's mean that you need to rely on the documentation for each widget to see if it has built-in Crosstalk support, and how to use it.  
+But what if you want to do more than just filter widgets? What if you want to compute summaries, run models, or provide downloads based on the filtered data? That's where Shiny comes in.
+To summarize, pure Crosstalk links widgets to each other; Crosstalk inside Shiny links widget state to arbitrary R computation.
+
+
+## Why Add Shiny?
+
+Use Shiny when the app needs work that cannot happen only in the
+browser. Common examples include:
+
+- Computing a summary from the currently selected inputs.
+- Changing the dataset based on user controls.
+- Downloading filtered data.
+- Running models or database queries.
+- Combining Crosstalk widgets with ordinary Shiny outputs.
+
+One important distinction: Crosstalk filters are client-side widget
+filters. Shiny does not automatically know which rows are currently
+visible after Crosstalk filtering. If the server needs the same
+filtering logic, define equivalent Shiny inputs and apply them
+server-side.
+
+## Complete Shiny App
+
+Save the following code as `app.R`, or run it from an R session. It uses
+Crosstalk for linked plot/table filtering and Shiny for the summary box
+and download.
+
+```{r, eval=FALSE}
+library(shiny)
+library(crosstalk)
+library(plotly)
+library(DT)
+library(dplyr)
+library(bslib)
+
+cars <- mtcars |>
+  tibble::rownames_to_column("car") |>
+  mutate(
+    cyl = factor(cyl, levels = c(4, 6, 8), labels = c("4 cylinders", "6 cylinders", "8 cylinders")),
+    am = factor(am, levels = c(0, 1), labels = c("Automatic", "Manual")),
+    gear = factor(gear)
+  )
+
+ui <- page_sidebar(
+  title = "Crosstalk + Shiny Cars Explorer",
+  theme = bs_theme(version = 5, bootswatch = "cosmo"),
+  sidebar = sidebar(
+    width = 320,
+    selectInput(
+      inputId = "cyl_server",
+      label = "Cylinders for Shiny summary",
+      choices = levels(cars$cyl),
+      selected = levels(cars$cyl),
+      multiple = TRUE
+    ),
+    sliderInput(
+      inputId = "mpg_server",
+      label = "MPG range for Shiny summary",
+      min = floor(min(cars$mpg)),
+      max = ceiling(max(cars$mpg)),
+      value = range(cars$mpg),
+      step = 1
+    ),
+    downloadButton("download_filtered", "Download Shiny-filtered CSV")
+  ),
+  layout_columns(
+    col_widths = c(4, 8),
+    card(
+      card_header("Crosstalk filters"),
+      uiOutput("crosstalk_filters")
+    ),
+    card(
+      card_header("Shiny summary"),
+      verbatimTextOutput("summary")
+    )
+  ),
+  card(
+    card_header("Linked Crosstalk widgets"),
+    plotlyOutput("scatter", height = 420),
+    DTOutput("table")
+  )
+)
+
+server <- function(input, output, session) {
+  shiny_filtered <- reactive({
+    req(input$cyl_server, input$mpg_server)
+
+    cars |>
+      filter(
+        cyl %in% input$cyl_server,
+        mpg >= input$mpg_server[1],
+        mpg <= input$mpg_server[2]
+      )
+  })
+
+  shared_cars <- reactive({
+    SharedData$new(
+      data = shiny_filtered(),
+      key = ~car,
+      group = "cars"
+    )
+  })
+
+  output$crosstalk_filters <- renderUI({
+    tagList(
+      filter_select(
+        id = "cyl_filter",
+        label = "Cylinders",
+        sharedData = shared_cars(),
+        group = ~cyl,
+        multiple = TRUE
+      ),
+      filter_select(
+        id = "transmission_filter",
+        label = "Transmission",
+        sharedData = shared_cars(),
+        group = ~am,
+        multiple = TRUE
+      ),
+      filter_slider(
+        id = "hp_filter",
+        label = "Horsepower",
+        sharedData = shared_cars(),
+        column = ~hp,
+        step = 10
+      )
+    )
+  })
+
+  output$scatter <- renderPlotly({
+    plot_ly(
+      shared_cars(),
+      x = ~wt,
+      y = ~mpg,
+      color = ~cyl,
+      text = ~paste(car, "<br>Transmission:", am, "<br>HP:", hp),
+      type = "scatter",
+      mode = "markers",
+      marker = list(size = 12, opacity = 0.8)
+    ) |>
+      layout(
+        xaxis = list(title = "Weight"),
+        yaxis = list(title = "Miles per gallon"),
+        legend = list(orientation = "h")
+      )
+  })
+
+  output$table <- renderDT({
+    datatable(
+      shared_cars(),
+      rownames = FALSE,
+      filter = "top",
+      options = list(pageLength = 8, scrollX = TRUE)
+    )
+  })
+
+  output$summary <- renderPrint({
+    data <- shiny_filtered()
+
+    data |>
+      summarise(
+        rows = n(),
+        mean_mpg = round(mean(mpg), 1),
+        mean_hp = round(mean(hp), 1),
+        mean_weight = round(mean(wt), 2)
+      )
+  })
+
+  output$download_filtered <- downloadHandler(
+    filename = function() {
+      paste0("cars-filtered-", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      write.csv(shiny_filtered(), file, row.names = FALSE)
+    }
+  )
+}
+
+shinyApp(ui, server)
+```
+
+## How the App Works
+
+The app has two layers of filtering:
+
+- Shiny inputs in the sidebar filter the server-side data.
+- Crosstalk inputs filter the currently displayed widgets in the
+  browser.
+
+This separation is deliberate. The Shiny summary and CSV download use
+`shiny_filtered()`, so they reflect only the sidebar controls. The plot
+and table use `SharedData`, so they also respond to Crosstalk filters.\
+crosstalk by itself, without shiny, would not be able to compute the
+`summary` or provide a download of the filtered data (via `write.csv)`,
+because those features require server-side logic. 
+crosstalk can only filter widgets that use the same `SharedData` object.  
+
+
+## Common Pitfalls
+
+### Reusing IDs
+
+Each Crosstalk filter needs a unique `id`. Reusing the same ID can make
+filters behave unpredictably.
+
+### Missing Stable Keys
+
+Use a stable `key` in `SharedData$new()`. Avoid row numbers when the
+data can be sorted, filtered, joined, or regenerated.
+
+### Expecting Shiny to See Crosstalk Filtering
+
+Crosstalk filters happen in the browser. A Shiny `reactive()` will not
+automatically receive the set of currently visible Crosstalk rows. If
+the server needs that information, put the filtering logic in Shiny
+inputs too.
+
+### Recreating SharedData Too Often
+
+For larger data, avoid rebuilding `SharedData` unless the underlying
+data changes. In this tutorial, it is rebuilt only when the Shiny
+sidebar filters change.
+
+## Exercises
+
+1.  Add a Crosstalk filter for `gear`.
+2.  Add a Shiny `selectInput()` for transmission and include it in
+    `shiny_filtered()`.
+3.  Change the plot so `hp` is on the x-axis and `mpg` remains on the
+    y-axis.
+4.  Add a second `plotlyOutput()` that shows `qsec` against `mpg` using
+    the same `SharedData` object.
+
+## Next Steps
+
+For production apps, use the same pattern with a real dataset:
+
+1.  Clean and label the data before creating `SharedData`.
+2.  Keep expensive filtering, joins, and summaries in Shiny reactives.
+3.  Use Crosstalk for lightweight linked filtering across HTML widgets.
+4.  Use downloads and reports from the Shiny-filtered data when
+    reproducibility matters.
+
+## Additional Resources
+<https://plotly-r.com/linking-views-with-shiny>

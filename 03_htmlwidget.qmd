@@ -1,0 +1,405 @@
+---
+title: "write my own html widget"
+author: "Dror Berel"
+format:
+  html:
+    toc: true
+    code-fold: false
+    self-contained: true
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+## Goal
+
+This lesson builds a very small custom `htmlwidget`.
+
+The widget is intentionally simple: it draws horizontal bars from a data
+frame. The important part is the shape of the code:
+
+- an R function prepares data for the browser
+- a JavaScript binding renders the widget
+- Shiny calls the same R function with `renderMiniBars()`
+- Crosstalk filters can hide and show rows in the widget
+
+## Packages
+
+Install these packages if needed:
+
+```{r}
+# install.packages(c("htmlwidgets", "htmltools", "shiny", "crosstalk", "DT"))
+```
+
+Load the packages:
+
+```{r}
+library(htmlwidgets)
+library(htmltools)
+library(shiny)
+library(crosstalk)
+library(DT)
+```
+
+## The Widget Code
+
+In a real package, the JavaScript below would usually live in a separate
+file under `inst/htmlwidgets/`. For a proof of concept, an inline
+`<script>` tag keeps everything in one lesson file.
+
+```{r}
+mini_bars_binding <- function() {
+  tags$script(HTML(
+    "
+HTMLWidgets.widget({
+  name: 'miniBars',
+  type: 'output',
+
+  factory: function(el, width, height) {
+    var currentX = null;
+    var filterHandle = null;
+    var filterCallback = null;
+    var activeKeys = null;
+
+    function draw(x) {
+      currentX = x;
+      var rows = x.rows || [];
+
+      if (activeKeys !== null) {
+        var keep = new Set(activeKeys.map(String));
+        rows = rows.filter(function(row) {
+          return keep.has(String(row.key));
+        });
+      }
+
+      var maxValue = Math.max.apply(
+        null,
+        rows.map(function(row) { return row.value; }).concat([1])
+      );
+
+      el.innerHTML = '';
+      el.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+      el.style.boxSizing = 'border-box';
+      el.style.padding = '8px';
+
+      if (rows.length === 0) {
+        var empty = document.createElement('div');
+        empty.textContent = 'No rows match the current filter.';
+        empty.style.color = '#666';
+        el.appendChild(empty);
+        return;
+      }
+
+      rows.forEach(function(row) {
+        var line = document.createElement('div');
+        line.style.display = 'grid';
+        line.style.gridTemplateColumns = '130px 1fr 48px';
+        line.style.gap = '8px';
+        line.style.alignItems = 'center';
+        line.style.margin = '8px 0';
+
+        var label = document.createElement('div');
+        label.textContent = row.label;
+        label.style.overflow = 'hidden';
+        label.style.textOverflow = 'ellipsis';
+        label.style.whiteSpace = 'nowrap';
+
+        var track = document.createElement('div');
+        track.style.background = '#e8edf3';
+        track.style.height = '18px';
+        track.style.borderRadius = '4px';
+
+        var bar = document.createElement('div');
+        bar.style.width = ((row.value / maxValue) * 100) + '%';
+        bar.style.height = '18px';
+        bar.style.borderRadius = '4px';
+        bar.style.background = '#2a6f9e';
+        track.appendChild(bar);
+
+        var value = document.createElement('div');
+        value.textContent = row.value;
+        value.style.textAlign = 'right';
+        value.style.fontVariantNumeric = 'tabular-nums';
+
+        line.appendChild(label);
+        line.appendChild(track);
+        line.appendChild(value);
+        el.appendChild(line);
+      });
+    }
+
+    return {
+      renderValue: function(x) {
+        if (filterHandle && filterCallback && filterHandle.off) {
+          filterHandle.off('change', filterCallback);
+          filterHandle = null;
+          filterCallback = null;
+        }
+
+        activeKeys = null;
+
+        if (x.group && window.crosstalk) {
+          filterHandle = new crosstalk.FilterHandle(x.group);
+          filterCallback = function(event) {
+            activeKeys = event.value === null ? null : event.value;
+            draw(currentX);
+          };
+          filterHandle.on('change', filterCallback);
+        }
+
+        draw(x);
+      },
+
+      resize: function(width, height) {
+        if (currentX) {
+          draw(currentX);
+        }
+      }
+    };
+  }
+});
+    "
+  ))
+}
+
+mini_bars <- function(data, label, value, width = "100%", height = 260) {
+  label_name <- deparse(substitute(label))
+  value_name <- deparse(substitute(value))
+
+  if (crosstalk::is.SharedData(data)) {
+    raw_data <- data$data(withSelection = FALSE, withFilter = FALSE)
+    keys <- data$key()
+    group <- data$groupName()
+  } else {
+    raw_data <- data
+    keys <- seq_len(nrow(raw_data))
+    group <- NULL
+  }
+
+  rows <- data.frame(
+    key = as.character(keys),
+    label = as.character(raw_data[[label_name]]),
+    value = as.numeric(raw_data[[value_name]]),
+    stringsAsFactors = FALSE
+  )
+
+  htmlwidgets::createWidget(
+    name = "miniBars",
+    x = list(rows = rows, group = group),
+    width = width,
+    height = height,
+    package = "htmlwidgets"
+  )
+}
+
+miniBarsOutput <- function(outputId, width = "100%", height = "260px") {
+  htmlwidgets::shinyWidgetOutput(
+    outputId = outputId,
+    name = "miniBars",
+    width = width,
+    height = height,
+    package = "htmlwidgets"
+  )
+}
+
+renderMiniBars <- function(expr, env = parent.frame(), quoted = FALSE) {
+  if (!quoted) {
+    expr <- substitute(expr)
+  }
+
+  htmlwidgets::shinyRenderWidget(
+    expr = expr,
+    outputFunction = miniBarsOutput,
+    env = env,
+    quoted = TRUE
+  )
+}
+```
+
+## Plain R Call
+
+The widget function accepts a data frame and the names of the label and
+value columns.
+
+```{r}
+fruit <- data.frame(
+  fruit = c("Apple", "Banana", "Blueberry", "Orange", "Pear"),
+  family = c("Pome", "Berry", "Berry", "Citrus", "Pome"),
+  value = c(10, 16, 7, 12, 5)
+)
+
+tagList(
+  mini_bars_binding(),
+  mini_bars(fruit, fruit, value)
+)
+```
+
+## Shiny Call
+
+In Shiny, the pattern is the same as other htmlwidgets:
+
+- put the JavaScript binding in the UI once
+- place `miniBarsOutput()` where the widget should appear
+- return `mini_bars()` from `renderMiniBars()`
+
+```{r, eval=FALSE}
+library(shiny)
+library(htmlwidgets)
+library(htmltools)
+
+fruit <- data.frame(
+  fruit = c("Apple", "Banana", "Blueberry", "Orange", "Pear"),
+  family = c("Pome", "Berry", "Berry", "Citrus", "Pome"),
+  value = c(10, 16, 7, 12, 5)
+)
+
+ui <- fluidPage(
+  mini_bars_binding(),
+  titlePanel("Custom htmlwidget"),
+  sliderInput("scale", "Scale values", min = 1, max = 5, value = 1),
+  miniBarsOutput("bars", height = "280px")
+)
+
+server <- function(input, output, session) {
+  output$bars <- renderMiniBars({
+    scaled_fruit <- fruit
+    scaled_fruit$value <- scaled_fruit$value * input$scale
+
+    mini_bars(scaled_fruit, fruit, value)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## Crosstalk Call
+
+To support Crosstalk, the widget needs two pieces of metadata:
+
+- `key`: the row identifier
+- `group`: the Crosstalk group shared by filters and widgets
+
+The R function above detects `SharedData` and sends both values to
+JavaScript. The JavaScript binding listens to
+`crosstalk.FilterHandle(group)` and redraws the bars when filters change.
+
+This example works in a regular rendered HTML document.
+
+```{r}
+shared_fruit <- SharedData$new(
+  data = fruit,
+  key = ~fruit,
+  group = "fruit"
+)
+
+tagList(
+  mini_bars_binding(),
+  bscols(
+    widths = c(3, 9),
+    list(
+      filter_select(
+        id = "family_filter",
+        label = "Fruit family",
+        sharedData = shared_fruit,
+        group = ~family,
+        multiple = TRUE
+      ),
+      filter_slider(
+        id = "value_filter",
+        label = "Value",
+        sharedData = shared_fruit,
+        column = ~value,
+        step = 1
+      )
+    ),
+    mini_bars(shared_fruit, fruit, value)
+  )
+)
+```
+
+## Shiny + Crosstalk Call
+
+This final example uses all three parts together:
+
+- Shiny owns the page and can add server-side reactivity
+- Crosstalk filters run in the browser
+- the custom htmlwidget listens to the Crosstalk filter state
+
+Save this as `app.R`, or run it from an R session after defining
+`mini_bars_binding()`, `mini_bars()`, `miniBarsOutput()`, and
+`renderMiniBars()`.
+
+```{r, eval=FALSE}
+library(shiny)
+library(htmlwidgets)
+library(htmltools)
+library(crosstalk)
+library(DT)
+
+fruit <- data.frame(
+  fruit = c("Apple", "Banana", "Blueberry", "Orange", "Pear"),
+  family = c("Pome", "Berry", "Berry", "Citrus", "Pome"),
+  value = c(10, 16, 7, 12, 5)
+)
+
+shared_fruit <- SharedData$new(
+  data = fruit,
+  key = ~fruit,
+  group = "fruit"
+)
+
+ui <- fluidPage(
+  mini_bars_binding(),
+  titlePanel("Shiny + Crosstalk + custom htmlwidget"),
+  fluidRow(
+    column(
+      width = 3,
+      filter_select(
+        id = "family_filter_app",
+        label = "Fruit family",
+        sharedData = shared_fruit,
+        group = ~family,
+        multiple = TRUE
+      ),
+      filter_slider(
+        id = "value_filter_app",
+        label = "Value",
+        sharedData = shared_fruit,
+        column = ~value,
+        step = 1
+      )
+    ),
+    column(
+      width = 9,
+      miniBarsOutput("bars", height = "280px"),
+      DTOutput("table")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  output$bars <- renderMiniBars({
+    mini_bars(shared_fruit, fruit, value)
+  })
+
+  output$table <- renderDT({
+    datatable(shared_fruit, rownames = FALSE)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## What To Notice
+
+The widget does not know anything about Shiny. Shiny only needs the
+usual htmlwidget output and render functions.
+
+Crosstalk is different: the widget must explicitly opt in by receiving a
+`group` and listening for browser-side filter events. Without that small
+JavaScript listener, Crosstalk filters would not affect the custom
+widget.
