@@ -14,28 +14,41 @@ Basic R/Shiny setup (R, RStudio, Shiny package, etc.)
 Also recommended (but not mandatory): LLM pre-installed in your IDE of
 preference (free co-pilot via github is ok)
 
-Shiny modules - deeper use cases. Demonstrate meta-ui eco-systems such
-as Pharmaverse/Teal. Participants will plug their own datasets into the
-framework and leverage built-in features.  
-Will also write compatible Teal modules from scratch, and modify
-existing modules.
-<https://github.com/pharmaverse/tealworkshop-shinygathering2024/tree/main/code>
+# Topics
 
-<https://phuse-org.github.io/teal-enhancements/>
+- **Shiny modules** - deeper use cases. Demonstrate meta-ui eco-systems
+  such as Pharmaverse/Teal. Participants will plug their own datasets
+  into the framework and leverage built-in features.  
+  Will also write compatible Teal modules from scratch, and modify
+  existing modules.
+  <https://github.com/pharmaverse/tealworkshop-shinygathering2024/tree/main/code>
 
-Enterprise-ready dashboards: walk-through r2d3 and JS integration for
-drill-down feature
-<https://solutions.posit.co/connections/db/best-practices/dashboards/>
+- **Teal** <https://phuse-org.github.io/teal-enhancements/>
 
-[Crosstalk](https://rstudio.github.io/crosstalk/shiny.html)
+- **r2d3** and **JS** integration: Enterprise-ready dashboards:
+  walk-through r2d3 and JS integration for drill-down feature
+  <https://solutions.posit.co/connections/db/best-practices/dashboards/>
 
-extended UI or server components: bslib, and others
+- [**Crosstalk**](https://rstudio.github.io/crosstalk/shiny.html)
 
-<https://github.com/nanxstats/awesome-shiny-extensions>
+- **extended UI** or server components: bslib, and others
 
-Rhino framework: <https://appsilon.github.io/rhino/>
+- <https://github.com/nanxstats/awesome-shiny-extensions>
 
-Other: <https://github.com/grabear/awesome-rshiny>
+- **Rhino** framework: <https://appsilon.github.io/rhino/>
+
+- Other: <https://github.com/grabear/awesome-rshiny>
+
+# Workshop Materials
+
+- [HTML_Rendering](https://drorberel.github.io/shiny_workshop/01_HTML_rendering.html)
+
+- [Shiny
+  Modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)
+
+- [Crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
+
+- [htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
 
 # What to expect:
 
@@ -87,17 +100,6 @@ session with a functional “proof of concept” embedded in your own work.
 
 - **Curiosity:** The direction of the workshop is driven by your
   questions and the tools you choose to explore.
-
-# Materials
-
-[HTML_Rendering](https://drorberel.github.io/shiny_workshop/01_HTML_rendering.html)
-
-[Shiny
-Modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)
-
-[Crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
-
-[htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
 
 …
 
