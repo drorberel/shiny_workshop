@@ -8,7 +8,7 @@
 
 <meta name="author" content="Dror Berel">
 
-<title>HTML rendering</title>
+<title>bslib: Multi-Page Shiny Apps with Shared Sidebar Controls</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -20,6 +20,41 @@ ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
 width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+}
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -2167,32 +2202,59 @@ vertical-align: -.125em;
 
 <body class="quarto-light">
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-full toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
   <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#core-idea" id="toc-core-idea" class="nav-link active" data-scroll-target="#core-idea">Core idea:</a>
+  <li><a href="#learning-goals" id="toc-learning-goals" class="nav-link active" data-scroll-target="#learning-goals">Learning goals</a></li>
+  <li><a href="#why-bslib" id="toc-why-bslib" class="nav-link" data-scroll-target="#why-bslib">Why <code>bslib</code>?</a></li>
+  <li><a href="#packages" id="toc-packages" class="nav-link" data-scroll-target="#packages">Packages</a></li>
+  <li><a href="#app-idea" id="toc-app-idea" class="nav-link" data-scroll-target="#app-idea">App idea</a></li>
+  <li><a href="#prepare-the-data" id="toc-prepare-the-data" class="nav-link" data-scroll-target="#prepare-the-data">Prepare the data</a></li>
+  <li><a href="#step-1-create-the-page-shell" id="toc-step-1-create-the-page-shell" class="nav-link" data-scroll-target="#step-1-create-the-page-shell">Step 1: Create the page shell</a></li>
+  <li><a href="#step-2-add-a-project-level-sidebar" id="toc-step-2-add-a-project-level-sidebar" class="nav-link" data-scroll-target="#step-2-add-a-project-level-sidebar">Step 2: Add a project-level sidebar</a></li>
+  <li><a href="#step-3-add-cards-and-outputs" id="toc-step-3-add-cards-and-outputs" class="nav-link" data-scroll-target="#step-3-add-cards-and-outputs">Step 3: Add cards and outputs</a></li>
+  <li><a href="#step-4-define-shared-server-logic" id="toc-step-4-define-shared-server-logic" class="nav-link" data-scroll-target="#step-4-define-shared-server-logic">Step 4: Define shared server logic</a></li>
+  <li><a href="#complete-app" id="toc-complete-app" class="nav-link" data-scroll-target="#complete-app">Complete app</a></li>
+  <li><a href="#what-to-notice" id="toc-what-to-notice" class="nav-link" data-scroll-target="#what-to-notice">What to notice</a>
   <ul class="collapse">
-  <li><a href="#ui-functions-html-tags" id="toc-ui-functions-html-tags" class="nav-link" data-scroll-target="#ui-functions-html-tags">1. UI functions → HTML tags</a></li>
-  <li><a href="#server-functions-rendered-outputs" id="toc-server-functions-rendered-outputs" class="nav-link" data-scroll-target="#server-functions-rendered-outputs">2. Server functions → rendered outputs</a></li>
-  <li><a href="#reactivity-connects-the-two" id="toc-reactivity-connects-the-two" class="nav-link" data-scroll-target="#reactivity-connects-the-two">3. Reactivity connects the two</a></li>
+  <li><a href="#the-sidebar-is-global" id="toc-the-sidebar-is-global" class="nav-link" data-scroll-target="#the-sidebar-is-global">The sidebar is global</a></li>
+  <li><a href="#the-reactive-data-is-shared" id="toc-the-reactive-data-is-shared" class="nav-link" data-scroll-target="#the-reactive-data-is-shared">The reactive data is shared</a></li>
+  <li><a href="#the-tabs-are-only-views" id="toc-the-tabs-are-only-views" class="nav-link" data-scroll-target="#the-tabs-are-only-views">The tabs are only views</a></li>
   </ul></li>
-  <li><a href="#key-insight" id="toc-key-insight" class="nav-link" data-scroll-target="#key-insight">key insight</a></li>
+  <li><a href="#moving-a-control-into-one-tab" id="toc-moving-a-control-into-one-tab" class="nav-link" data-scroll-target="#moving-a-control-into-one-tab">Moving a control into one tab</a>
+  <ul class="collapse">
+  <li><a href="#remove-it-from-the-sidebar" id="toc-remove-it-from-the-sidebar" class="nav-link" data-scroll-target="#remove-it-from-the-sidebar">Remove it from the sidebar</a></li>
+  <li><a href="#add-it-to-the-plot-tab" id="toc-add-it-to-the-plot-tab" class="nav-link" data-scroll-target="#add-it-to-the-plot-tab">Add it to the Plot tab</a></li>
+  <li><a href="#why-this-is-better" id="toc-why-this-is-better" class="nav-link" data-scroll-target="#why-this-is-better">Why this is better</a></li>
+  </ul></li>
+  <li><a href="#case-study-use-page_navbarid-page" id="toc-case-study-use-page_navbarid-page" class="nav-link" data-scroll-target="#case-study-use-page_navbarid-page">Case study: Use <code>page_navbar(id = &quot;page&quot;)</code></a>
+  <ul class="collapse">
+  <li><a href="#display-the-active-page" id="toc-display-the-active-page" class="nav-link" data-scroll-target="#display-the-active-page">Display the active page</a></li>
+  <li><a href="#make-the-sidebar-page-aware" id="toc-make-the-sidebar-page-aware" class="nav-link" data-scroll-target="#make-the-sidebar-page-aware">Make the sidebar page-aware</a></li>
+  <li><a href="#defer-expensive-work-until-a-page-is-opened" id="toc-defer-expensive-work-until-a-page-is-opened" class="nav-link" data-scroll-target="#defer-expensive-work-until-a-page-is-opened">Defer expensive work until a page is opened</a></li>
+  <li><a href="#track-app-usage" id="toc-track-app-usage" class="nav-link" data-scroll-target="#track-app-usage">Track app usage</a></li>
+  <li><a href="#when-id-page-is-helpful" id="toc-when-id-page-is-helpful" class="nav-link" data-scroll-target="#when-id-page-is-helpful">When <code>id = &quot;page&quot;</code> is helpful</a></li>
+  </ul></li>
+  <li><a href="#exercise" id="toc-exercise" class="nav-link" data-scroll-target="#exercise">Exercise</a></li>
+  <li><a href="#key-takeaway" id="toc-key-takeaway" class="nav-link" data-scroll-target="#key-takeaway">Key takeaway</a></li>
   </ul>
 </nav>
 </div>
-<main class="content" id="quarto-document-content">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content column-page-right" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">HTML rendering</h1>
+<h1 class="title">bslib: Multi-Page Shiny Apps with Shared Sidebar Controls</h1>
 </div>
 
 
 
-<div class="quarto-title-meta">
+<div class="quarto-title-meta column-page-right">
 
     <div>
     <div class="quarto-title-meta-heading">Author</div>
@@ -2210,41 +2272,710 @@ vertical-align: -.125em;
 </header>
 
 
-<section id="core-idea" class="level1">
-<h1>Core idea:</h1>
-<p>R gives you a set of functions that write HTML for you. You never touch HTML directly. You call R functions, and Shiny turns them into the browser code.</p>
-<p>There are really just three moving parts:</p>
-<section id="ui-functions-html-tags" class="level2">
-<h2 class="anchored" data-anchor-id="ui-functions-html-tags">1. UI functions → HTML tags</h2>
-<p>When you write <code>textInput(&quot;name&quot;, &quot;Your name&quot;)</code> in R, Shiny immediately converts that into actual HTML text:<br>
-<code>&lt;label for=&quot;name&quot;&gt;Your name&lt;/label&gt;</code><br>
-<code>&lt;input id=&quot;name&quot; type=&quot;text&quot; class=&quot;form-control&quot;&gt;</code></p>
-<div class="form-group">
-<p><label for="name">Your name</label> <input id="name" type="text" class="form-control"></p>
+<section id="learning-goals" class="level1">
+<h1>Learning goals</h1>
+<p>By the end of this lesson, you should be able to:</p>
+<ul>
+<li>use <code>bslib</code> as the main layout system for a Shiny app</li>
+<li>create a Shiny app with multiple tabs or pages</li>
+<li>place project-level inputs in one sidebar</li>
+<li>reuse the same sidebar inputs across all tabs</li>
+<li>organize outputs with <code>card()</code>, <code>layout_columns()</code>, and value boxes</li>
+</ul>
+</section>
+<section id="why-bslib" class="level1">
+<h1>Why <code>bslib</code>?</h1>
+<p>Base Shiny layouts such as <code>fluidPage()</code>, <code>sidebarLayout()</code>, and <code>tabsetPanel()</code> are still useful, but many modern Shiny apps need more structure:</p>
+<ul>
+<li>a consistent page layout</li>
+<li>multiple views of the same project</li>
+<li>cards that group related outputs</li>
+<li>sidebars that can be opened, closed, and shared across pages</li>
+<li>Bootstrap styling without writing much CSS</li>
+</ul>
+<p>The <code>bslib</code> package gives Shiny a more modern layout vocabulary. In this tutorial, we will build a small app where one sidebar controls all tabs.</p>
+</section>
+<section id="packages" class="level1">
+<h1>Packages</h1>
+<p>Install these packages if needed:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c(&quot;shiny&quot;, &quot;bslib&quot;, &quot;bsicons&quot;, &quot;dplyr&quot;, &quot;ggplot2&quot;, &quot;DT&quot;))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The browser receives that comma-separated stream of HTML text and draws a text box. <code>fluidPage()</code>, <code>sidebarLayout()</code>, <code>sliderInput()</code> — all of these are just R functions that produce HTML strings.</p>
-</section>
-<section id="server-functions-rendered-outputs" class="level2">
-<h2 class="anchored" data-anchor-id="server-functions-rendered-outputs">2. Server functions → rendered outputs</h2>
-<p>On the server side, you write things like <code>renderPlot({ hist(rnorm(100)) })</code>. Shiny runs that R expression, captures what it produces (a plot image, a table, some text), converts it to HTML, and sends it to the browser. <code>renderText</code>, <code>renderTable</code>, <code>renderUI</code> — each one knows how to wrap its R output in the right HTML tags.</p>
-</section>
-<section id="reactivity-connects-the-two" class="level2">
-<h2 class="anchored" data-anchor-id="reactivity-connects-the-two">3. Reactivity connects the two</h2>
-<p>When a user moves a slider, the browser sends the new value back to the R server. Shiny’s reactive system notices which render functions depend on that input and re-runs only those, then pushes fresh HTML back to the browser.</p>
-<p>Here’s a simple visual of the flow:</p>
-</section>
-</section>
-<section id="key-insight" class="level1">
-<h1>key insight</h1>
-<p><strong>HTML is just text</strong>. A web page is nothing more than a very long string of comma-separated tags that the browser reads top to bottom. Shiny’s only trick is that it writes that string for you using R functions instead of making you type raw HTML.<br>
-So when you call: <code>rsliderInput(&quot;n&quot;, &quot;Sample size&quot;, min=10, max=500, value=100)</code> Shiny runs that function, which returns this character string:<br>
-<code>&lt;label class=&quot;control-label&quot; for=&quot;n&quot;&gt;Sample size&lt;/label&gt;</code><br>
-<code>&lt;input class=&quot;js-range-slider&quot; id=&quot;n&quot; min=&quot;10&quot; max=&quot;500&quot; value=&quot;100&quot;/&gt;</code></p>
-<p>That character string is renderded into this on the browser:</p>
-<div class="form-group shiny-input-container">
-<p><label class="control-label" for="n">Sample size</label> <input class="js-range-slider" id="n" min="10" max="500" value="100"></p>
+<p>Load the packages:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bslib)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: &#39;bslib&#39;</code></pre>
 </div>
-<p>That string gets concatenated with all the other UI function outputs, and the whole pile of text is sent to the browser, which parses it left-to-right, comma-separated tag by tag, and draws the interface. The server side works the same way. renderPlot() runs your ggplot code, saves the image to a temp file, and injects <code>&lt;img src=&quot;...&quot;/&gt;</code> into the HTML. <code>renderText()</code> wraps your string in a <code>&lt;span&gt;</code>. The browser never knows it’s talking to R — it just sees HTML.</p>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from &#39;package:utils&#39;:
+
+    page</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: &#39;dplyr&#39;</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from &#39;package:stats&#39;:
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from &#39;package:base&#39;:
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: &#39;DT&#39;</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from &#39;package:shiny&#39;:
+
+    dataTableOutput, renderDataTable</code></pre>
+</div>
+</div>
+</section>
+<section id="app-idea" class="level1">
+<h1>App idea</h1>
+<p>We will build a small project dashboard using <code>mtcars</code>.</p>
+<p>The app has one project-level sidebar with controls for:</p>
+<ul>
+<li>cylinder groups</li>
+<li>transmission type</li>
+<li>the main numeric metric</li>
+<li>whether to show a trend line</li>
+</ul>
+<p>Those inputs are not local to one tab. They apply to every tab:</p>
+<ul>
+<li>the overview tab shows summary values</li>
+<li>the plot tab shows a filtered scatter plot</li>
+<li>the table tab shows the filtered rows</li>
+<li>the notes tab explains the current project state</li>
+</ul>
+</section>
+<section id="prepare-the-data" class="level1">
+<h1>Prepare the data</h1>
+<p>The app uses <code>mtcars</code>, but we first create friendlier labels.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>cars <span class="ot">&lt;-</span> mtcars <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">rownames_to_column</span>(<span class="st">&quot;car&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">cyl =</span> <span class="fu">factor</span>(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>      cyl,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">8</span>),</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;4 cylinders&quot;</span>, <span class="st">&quot;6 cylinders&quot;</span>, <span class="st">&quot;8 cylinders&quot;</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">am =</span> <span class="fu">factor</span>(</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>      am,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Automatic&quot;</span>, <span class="st">&quot;Manual&quot;</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">gear =</span> <span class="fu">factor</span>(gear),</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">carb =</span> <span class="fu">factor</span>(carb)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(cars)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                car  mpg         cyl disp  hp drat    wt  qsec vs        am
+1         Mazda RX4 21.0 6 cylinders  160 110 3.90 2.620 16.46  0    Manual
+2     Mazda RX4 Wag 21.0 6 cylinders  160 110 3.90 2.875 17.02  0    Manual
+3        Datsun 710 22.8 4 cylinders  108  93 3.85 2.320 18.61  1    Manual
+4    Hornet 4 Drive 21.4 6 cylinders  258 110 3.08 3.215 19.44  1 Automatic
+5 Hornet Sportabout 18.7 8 cylinders  360 175 3.15 3.440 17.02  0 Automatic
+6           Valiant 18.1 6 cylinders  225 105 2.76 3.460 20.22  1 Automatic
+  gear carb
+1    4    4
+2    4    4
+3    4    1
+4    3    1
+5    3    2
+6    3    1</code></pre>
+</div>
+</div>
+</section>
+<section id="step-1-create-the-page-shell" class="level1">
+<h1>Step 1: Create the page shell</h1>
+<p>The outer layout is <code>page_navbar()</code>. Each <code>nav_panel()</code> becomes one page inside the app.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ui_panels_only <span class="ot">&lt;-</span> <span class="fu">page_navbar</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Motor Trend Explorer&quot;</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">theme =</span> <span class="fu">bs_theme</span>(<span class="at">bootswatch =</span> <span class="st">&quot;flatly&quot;</span>),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Overview&quot;</span>),</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Plot&quot;</span>),</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Table&quot;</span>),</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Notes&quot;</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This gives us pages, but not yet a shared sidebar.</p>
+</section>
+<section id="step-2-add-a-project-level-sidebar" class="level1">
+<h1>Step 2: Add a project-level sidebar</h1>
+<p>The important pattern is that the sidebar belongs to <code>page_navbar()</code>, not to a single tab. Because of that, the inputs are available to every tab in the app.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>ui_with_sidebar <span class="ot">&lt;-</span> <span class="fu">page_navbar</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Motor Trend Explorer&quot;</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">theme =</span> <span class="fu">bs_theme</span>(<span class="at">bootswatch =</span> <span class="st">&quot;flatly&quot;</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">sidebar =</span> <span class="fu">sidebar</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Project controls&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;cylinders&quot;</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Cylinders&quot;</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl),</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;transmission&quot;</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Transmission&quot;</span>,</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am),</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;metric&quot;</span>,</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Main metric&quot;</span>,</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">c</span>(</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Miles per gallon&quot;</span> <span class="ot">=</span> <span class="st">&quot;mpg&quot;</span>,</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Horsepower&quot;</span> <span class="ot">=</span> <span class="st">&quot;hp&quot;</span>,</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Weight&quot;</span> <span class="ot">=</span> <span class="st">&quot;wt&quot;</span>,</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Quarter mile time&quot;</span> <span class="ot">=</span> <span class="st">&quot;qsec&quot;</span></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="st">&quot;mpg&quot;</span></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxInput</span>(</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;show_smooth&quot;</span>,</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Show trend line&quot;</span>,</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="cn">TRUE</span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Overview&quot;</span>),</span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Plot&quot;</span>),</span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Table&quot;</span>),</span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Notes&quot;</span>)</span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="step-3-add-cards-and-outputs" class="level1">
+<h1>Step 3: Add cards and outputs</h1>
+<p><code>bslib::card()</code> is useful for grouping related content. Value boxes are good for high-level numbers. <code>layout_columns()</code> creates responsive columns that adjust as the screen changes.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nav_panel</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Overview&quot;</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">layout_columns</span>(</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">value_box</span>(</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;Cars&quot;</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;n_cars&quot;</span>),</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;car-front&quot;</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">value_box</span>(</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;Average metric&quot;</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;avg_metric&quot;</span>),</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;speedometer2&quot;</span>)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">value_box</span>(</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="st">&quot;Best car&quot;</span>,</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;best_car&quot;</span>),</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;trophy&quot;</span>)</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">card</span>(</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">card_header</span>(<span class="st">&quot;Summary by cylinder group&quot;</span>),</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tableOutput</span>(<span class="st">&quot;cylinder_summary&quot;</span>)</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>In a real app, each tab can have a different purpose while still using the same project-level filters.</p>
+</section>
+<section id="step-4-define-shared-server-logic" class="level1">
+<h1>Step 4: Define shared server logic</h1>
+<p>The key server pattern is to create one filtered reactive expression. All tabs use this same reactive object.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>filtered_cars <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(input<span class="sc">$</span>cylinders, input<span class="sc">$</span>transmission)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  cars <span class="sc">|&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>      cyl <span class="sc">%in%</span> input<span class="sc">$</span>cylinders,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>      am <span class="sc">%in%</span> input<span class="sc">$</span>transmission</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This is the core idea of project-level UI parameters:</p>
+<ul>
+<li>define the inputs once</li>
+<li>define the filtering logic once</li>
+<li>reuse the resulting reactive data everywhere</li>
+</ul>
+</section>
+<section id="complete-app" class="level1">
+<h1>Complete app</h1>
+<p>Save the following code as <code>app.R</code>, or run it from an R session.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bslib)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DT)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>cars <span class="ot">&lt;-</span> mtcars <span class="sc">|&gt;</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">rownames_to_column</span>(<span class="st">&quot;car&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">cyl =</span> <span class="fu">factor</span>(</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>      cyl,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">6</span>, <span class="dv">8</span>),</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;4 cylinders&quot;</span>, <span class="st">&quot;6 cylinders&quot;</span>, <span class="st">&quot;8 cylinders&quot;</span>)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">am =</span> <span class="fu">factor</span>(</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>      am,</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Automatic&quot;</span>, <span class="st">&quot;Manual&quot;</span>)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">gear =</span> <span class="fu">factor</span>(gear),</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">carb =</span> <span class="fu">factor</span>(carb)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>metric_choices <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Miles per gallon&quot;</span> <span class="ot">=</span> <span class="st">&quot;mpg&quot;</span>,</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Horsepower&quot;</span> <span class="ot">=</span> <span class="st">&quot;hp&quot;</span>,</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Weight&quot;</span> <span class="ot">=</span> <span class="st">&quot;wt&quot;</span>,</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Quarter mile time&quot;</span> <span class="ot">=</span> <span class="st">&quot;qsec&quot;</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">page_navbar</span>(</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Motor Trend Explorer&quot;</span>,</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">theme =</span> <span class="fu">bs_theme</span>(</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">version =</span> <span class="dv">5</span>,</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">bootswatch =</span> <span class="st">&quot;flatly&quot;</span>,</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary =</span> <span class="st">&quot;#2c7fb8&quot;</span></span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">sidebar =</span> <span class="fu">sidebar</span>(</span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Project controls&quot;</span>,</span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">width =</span> <span class="dv">300</span>,</span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;cylinders&quot;</span>,</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Cylinders&quot;</span>,</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl),</span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl)</span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;transmission&quot;</span>,</span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Transmission&quot;</span>,</span>
+<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am),</span>
+<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am)</span>
+<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a>    <span class="fu">selectInput</span>(</span>
+<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;metric&quot;</span>,</span>
+<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Main metric&quot;</span>,</span>
+<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>      <span class="at">choices =</span> metric_choices,</span>
+<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>      <span class="at">selected =</span> <span class="st">&quot;mpg&quot;</span></span>
+<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxInput</span>(</span>
+<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;show_smooth&quot;</span>,</span>
+<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Show trend line&quot;</span>,</span>
+<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="cn">TRUE</span></span>
+<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(</span>
+<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Overview&quot;</span>,</span>
+<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">layout_columns</span>(</span>
+<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>      <span class="fu">value_box</span>(</span>
+<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a>        <span class="at">title =</span> <span class="st">&quot;Cars&quot;</span>,</span>
+<span id="cb18-70"><a href="#cb18-70" aria-hidden="true" tabindex="-1"></a>        <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;n_cars&quot;</span>),</span>
+<span id="cb18-71"><a href="#cb18-71" aria-hidden="true" tabindex="-1"></a>        <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;car-front&quot;</span>)</span>
+<span id="cb18-72"><a href="#cb18-72" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb18-73"><a href="#cb18-73" aria-hidden="true" tabindex="-1"></a>      <span class="fu">value_box</span>(</span>
+<span id="cb18-74"><a href="#cb18-74" aria-hidden="true" tabindex="-1"></a>        <span class="at">title =</span> <span class="st">&quot;Average metric&quot;</span>,</span>
+<span id="cb18-75"><a href="#cb18-75" aria-hidden="true" tabindex="-1"></a>        <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;avg_metric&quot;</span>),</span>
+<span id="cb18-76"><a href="#cb18-76" aria-hidden="true" tabindex="-1"></a>        <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;speedometer2&quot;</span>)</span>
+<span id="cb18-77"><a href="#cb18-77" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb18-78"><a href="#cb18-78" aria-hidden="true" tabindex="-1"></a>      <span class="fu">value_box</span>(</span>
+<span id="cb18-79"><a href="#cb18-79" aria-hidden="true" tabindex="-1"></a>        <span class="at">title =</span> <span class="st">&quot;Best car&quot;</span>,</span>
+<span id="cb18-80"><a href="#cb18-80" aria-hidden="true" tabindex="-1"></a>        <span class="at">value =</span> <span class="fu">textOutput</span>(<span class="st">&quot;best_car&quot;</span>),</span>
+<span id="cb18-81"><a href="#cb18-81" aria-hidden="true" tabindex="-1"></a>        <span class="at">showcase =</span> bsicons<span class="sc">::</span><span class="fu">bs_icon</span>(<span class="st">&quot;trophy&quot;</span>)</span>
+<span id="cb18-82"><a href="#cb18-82" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-83"><a href="#cb18-83" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>    <span class="fu">card</span>(</span>
+<span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>      <span class="fu">card_header</span>(<span class="st">&quot;Summary by cylinder group&quot;</span>),</span>
+<span id="cb18-86"><a href="#cb18-86" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tableOutput</span>(<span class="st">&quot;cylinder_summary&quot;</span>)</span>
+<span id="cb18-87"><a href="#cb18-87" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-88"><a href="#cb18-88" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb18-89"><a href="#cb18-89" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(</span>
+<span id="cb18-90"><a href="#cb18-90" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Plot&quot;</span>,</span>
+<span id="cb18-91"><a href="#cb18-91" aria-hidden="true" tabindex="-1"></a>    <span class="fu">card</span>(</span>
+<span id="cb18-92"><a href="#cb18-92" aria-hidden="true" tabindex="-1"></a>      <span class="at">full_screen =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-93"><a href="#cb18-93" aria-hidden="true" tabindex="-1"></a>      <span class="fu">card_header</span>(<span class="fu">textOutput</span>(<span class="st">&quot;plot_title&quot;</span>)),</span>
+<span id="cb18-94"><a href="#cb18-94" aria-hidden="true" tabindex="-1"></a>      <span class="fu">plotOutput</span>(<span class="st">&quot;metric_plot&quot;</span>, <span class="at">height =</span> <span class="dv">480</span>)</span>
+<span id="cb18-95"><a href="#cb18-95" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-96"><a href="#cb18-96" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb18-97"><a href="#cb18-97" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(</span>
+<span id="cb18-98"><a href="#cb18-98" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Table&quot;</span>,</span>
+<span id="cb18-99"><a href="#cb18-99" aria-hidden="true" tabindex="-1"></a>    <span class="fu">card</span>(</span>
+<span id="cb18-100"><a href="#cb18-100" aria-hidden="true" tabindex="-1"></a>      <span class="at">full_screen =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-101"><a href="#cb18-101" aria-hidden="true" tabindex="-1"></a>      <span class="fu">card_header</span>(<span class="st">&quot;Filtered cars&quot;</span>),</span>
+<span id="cb18-102"><a href="#cb18-102" aria-hidden="true" tabindex="-1"></a>      <span class="fu">DTOutput</span>(<span class="st">&quot;cars_table&quot;</span>)</span>
+<span id="cb18-103"><a href="#cb18-103" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-104"><a href="#cb18-104" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb18-105"><a href="#cb18-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(</span>
+<span id="cb18-106"><a href="#cb18-106" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Notes&quot;</span>,</span>
+<span id="cb18-107"><a href="#cb18-107" aria-hidden="true" tabindex="-1"></a>    <span class="fu">layout_columns</span>(</span>
+<span id="cb18-108"><a href="#cb18-108" aria-hidden="true" tabindex="-1"></a>      <span class="fu">card</span>(</span>
+<span id="cb18-109"><a href="#cb18-109" aria-hidden="true" tabindex="-1"></a>        <span class="fu">card_header</span>(<span class="st">&quot;Current project state&quot;</span>),</span>
+<span id="cb18-110"><a href="#cb18-110" aria-hidden="true" tabindex="-1"></a>        <span class="fu">verbatimTextOutput</span>(<span class="st">&quot;project_state&quot;</span>)</span>
+<span id="cb18-111"><a href="#cb18-111" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb18-112"><a href="#cb18-112" aria-hidden="true" tabindex="-1"></a>      <span class="fu">card</span>(</span>
+<span id="cb18-113"><a href="#cb18-113" aria-hidden="true" tabindex="-1"></a>        <span class="fu">card_header</span>(<span class="st">&quot;Pattern&quot;</span>),</span>
+<span id="cb18-114"><a href="#cb18-114" aria-hidden="true" tabindex="-1"></a>        tags<span class="sc">$</span><span class="fu">p</span>(</span>
+<span id="cb18-115"><a href="#cb18-115" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;The sidebar is attached to page_navbar(), so the controls are &quot;</span>,</span>
+<span id="cb18-116"><a href="#cb18-116" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;available across all nav panels.&quot;</span></span>
+<span id="cb18-117"><a href="#cb18-117" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb18-118"><a href="#cb18-118" aria-hidden="true" tabindex="-1"></a>        tags<span class="sc">$</span><span class="fu">p</span>(</span>
+<span id="cb18-119"><a href="#cb18-119" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;The server creates one filtered reactive dataset and every tab &quot;</span>,</span>
+<span id="cb18-120"><a href="#cb18-120" aria-hidden="true" tabindex="-1"></a>          <span class="st">&quot;uses that same reactive object.&quot;</span></span>
+<span id="cb18-121"><a href="#cb18-121" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb18-122"><a href="#cb18-122" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-123"><a href="#cb18-123" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-124"><a href="#cb18-124" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb18-125"><a href="#cb18-125" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-126"><a href="#cb18-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-127"><a href="#cb18-127" aria-hidden="true" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb18-128"><a href="#cb18-128" aria-hidden="true" tabindex="-1"></a>  filtered_cars <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb18-129"><a href="#cb18-129" aria-hidden="true" tabindex="-1"></a>    <span class="fu">req</span>(input<span class="sc">$</span>cylinders, input<span class="sc">$</span>transmission)</span>
+<span id="cb18-130"><a href="#cb18-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-131"><a href="#cb18-131" aria-hidden="true" tabindex="-1"></a>    cars <span class="sc">|&gt;</span></span>
+<span id="cb18-132"><a href="#cb18-132" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(</span>
+<span id="cb18-133"><a href="#cb18-133" aria-hidden="true" tabindex="-1"></a>        cyl <span class="sc">%in%</span> input<span class="sc">$</span>cylinders,</span>
+<span id="cb18-134"><a href="#cb18-134" aria-hidden="true" tabindex="-1"></a>        am <span class="sc">%in%</span> input<span class="sc">$</span>transmission</span>
+<span id="cb18-135"><a href="#cb18-135" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-136"><a href="#cb18-136" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-137"><a href="#cb18-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-138"><a href="#cb18-138" aria-hidden="true" tabindex="-1"></a>  selected_metric_label <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb18-139"><a href="#cb18-139" aria-hidden="true" tabindex="-1"></a>    <span class="fu">names</span>(metric_choices)[<span class="fu">match</span>(input<span class="sc">$</span>metric, metric_choices)]</span>
+<span id="cb18-140"><a href="#cb18-140" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-141"><a href="#cb18-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-142"><a href="#cb18-142" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>n_cars <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb18-143"><a href="#cb18-143" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(<span class="fu">filtered_cars</span>())</span>
+<span id="cb18-144"><a href="#cb18-144" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-145"><a href="#cb18-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-146"><a href="#cb18-146" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>avg_metric <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb18-147"><a href="#cb18-147" aria-hidden="true" tabindex="-1"></a>    value <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">filtered_cars</span>()[[input<span class="sc">$</span>metric]], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-148"><a href="#cb18-148" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(value, <span class="dv">1</span>)</span>
+<span id="cb18-149"><a href="#cb18-149" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-150"><a href="#cb18-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-151"><a href="#cb18-151" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>best_car <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb18-152"><a href="#cb18-152" aria-hidden="true" tabindex="-1"></a>    data <span class="ot">&lt;-</span> <span class="fu">filtered_cars</span>()</span>
+<span id="cb18-153"><a href="#cb18-153" aria-hidden="true" tabindex="-1"></a>    <span class="fu">req</span>(<span class="fu">nrow</span>(data) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb18-154"><a href="#cb18-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-155"><a href="#cb18-155" aria-hidden="true" tabindex="-1"></a>    data<span class="sc">$</span>car[<span class="fu">which.max</span>(data[[input<span class="sc">$</span>metric]])]</span>
+<span id="cb18-156"><a href="#cb18-156" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-157"><a href="#cb18-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-158"><a href="#cb18-158" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>cylinder_summary <span class="ot">&lt;-</span> <span class="fu">renderTable</span>({</span>
+<span id="cb18-159"><a href="#cb18-159" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filtered_cars</span>() <span class="sc">|&gt;</span></span>
+<span id="cb18-160"><a href="#cb18-160" aria-hidden="true" tabindex="-1"></a>      <span class="fu">group_by</span>(cyl) <span class="sc">|&gt;</span></span>
+<span id="cb18-161"><a href="#cb18-161" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summarise</span>(</span>
+<span id="cb18-162"><a href="#cb18-162" aria-hidden="true" tabindex="-1"></a>        <span class="at">cars =</span> <span class="fu">n</span>(),</span>
+<span id="cb18-163"><a href="#cb18-163" aria-hidden="true" tabindex="-1"></a>        <span class="at">avg_metric =</span> <span class="fu">round</span>(<span class="fu">mean</span>(.data[[input<span class="sc">$</span>metric]], <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">1</span>),</span>
+<span id="cb18-164"><a href="#cb18-164" aria-hidden="true" tabindex="-1"></a>        <span class="at">avg_mpg =</span> <span class="fu">round</span>(<span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="dv">1</span>),</span>
+<span id="cb18-165"><a href="#cb18-165" aria-hidden="true" tabindex="-1"></a>        <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span></span>
+<span id="cb18-166"><a href="#cb18-166" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-167"><a href="#cb18-167" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-168"><a href="#cb18-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-169"><a href="#cb18-169" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>plot_title <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb18-170"><a href="#cb18-170" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">selected_metric_label</span>(), <span class="st">&quot;by vehicle weight&quot;</span>)</span>
+<span id="cb18-171"><a href="#cb18-171" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-172"><a href="#cb18-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-173"><a href="#cb18-173" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>metric_plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb18-174"><a href="#cb18-174" aria-hidden="true" tabindex="-1"></a>    p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(</span>
+<span id="cb18-175"><a href="#cb18-175" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filtered_cars</span>(),</span>
+<span id="cb18-176"><a href="#cb18-176" aria-hidden="true" tabindex="-1"></a>      <span class="fu">aes</span>(<span class="at">x =</span> wt, <span class="at">y =</span> .data[[input<span class="sc">$</span>metric]], <span class="at">color =</span> cyl)</span>
+<span id="cb18-177"><a href="#cb18-177" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb18-178"><a href="#cb18-178" aria-hidden="true" tabindex="-1"></a>      <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">3</span>, <span class="at">alpha =</span> <span class="fl">0.85</span>) <span class="sc">+</span></span>
+<span id="cb18-179"><a href="#cb18-179" aria-hidden="true" tabindex="-1"></a>      <span class="fu">labs</span>(</span>
+<span id="cb18-180"><a href="#cb18-180" aria-hidden="true" tabindex="-1"></a>        <span class="at">x =</span> <span class="st">&quot;Weight&quot;</span>,</span>
+<span id="cb18-181"><a href="#cb18-181" aria-hidden="true" tabindex="-1"></a>        <span class="at">y =</span> <span class="fu">selected_metric_label</span>(),</span>
+<span id="cb18-182"><a href="#cb18-182" aria-hidden="true" tabindex="-1"></a>        <span class="at">color =</span> <span class="st">&quot;Cylinders&quot;</span></span>
+<span id="cb18-183"><a href="#cb18-183" aria-hidden="true" tabindex="-1"></a>      ) <span class="sc">+</span></span>
+<span id="cb18-184"><a href="#cb18-184" aria-hidden="true" tabindex="-1"></a>      <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span>
+<span id="cb18-185"><a href="#cb18-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-186"><a href="#cb18-186" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">isTRUE</span>(input<span class="sc">$</span>show_smooth)) {</span>
+<span id="cb18-187"><a href="#cb18-187" aria-hidden="true" tabindex="-1"></a>      p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">&quot;lm&quot;</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>)</span>
+<span id="cb18-188"><a href="#cb18-188" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb18-189"><a href="#cb18-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-190"><a href="#cb18-190" aria-hidden="true" tabindex="-1"></a>    p</span>
+<span id="cb18-191"><a href="#cb18-191" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-192"><a href="#cb18-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-193"><a href="#cb18-193" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>cars_table <span class="ot">&lt;-</span> <span class="fu">renderDT</span>({</span>
+<span id="cb18-194"><a href="#cb18-194" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filtered_cars</span>() <span class="sc">|&gt;</span></span>
+<span id="cb18-195"><a href="#cb18-195" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(car, cyl, am, mpg, hp, wt, qsec, gear, carb) <span class="sc">|&gt;</span></span>
+<span id="cb18-196"><a href="#cb18-196" aria-hidden="true" tabindex="-1"></a>      <span class="fu">datatable</span>(</span>
+<span id="cb18-197"><a href="#cb18-197" aria-hidden="true" tabindex="-1"></a>        <span class="at">rownames =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb18-198"><a href="#cb18-198" aria-hidden="true" tabindex="-1"></a>        <span class="at">options =</span> <span class="fu">list</span>(<span class="at">pageLength =</span> <span class="dv">10</span>, <span class="at">scrollX =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-199"><a href="#cb18-199" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb18-200"><a href="#cb18-200" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-201"><a href="#cb18-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-202"><a href="#cb18-202" aria-hidden="true" tabindex="-1"></a>  output<span class="sc">$</span>project_state <span class="ot">&lt;-</span> <span class="fu">renderPrint</span>({</span>
+<span id="cb18-203"><a href="#cb18-203" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb18-204"><a href="#cb18-204" aria-hidden="true" tabindex="-1"></a>      <span class="at">cylinders =</span> input<span class="sc">$</span>cylinders,</span>
+<span id="cb18-205"><a href="#cb18-205" aria-hidden="true" tabindex="-1"></a>      <span class="at">transmission =</span> input<span class="sc">$</span>transmission,</span>
+<span id="cb18-206"><a href="#cb18-206" aria-hidden="true" tabindex="-1"></a>      <span class="at">metric =</span> <span class="fu">selected_metric_label</span>(),</span>
+<span id="cb18-207"><a href="#cb18-207" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows_after_filtering =</span> <span class="fu">nrow</span>(<span class="fu">filtered_cars</span>())</span>
+<span id="cb18-208"><a href="#cb18-208" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb18-209"><a href="#cb18-209" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb18-210"><a href="#cb18-210" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-211"><a href="#cb18-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-212"><a href="#cb18-212" aria-hidden="true" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="what-to-notice" class="level1">
+<h1>What to notice</h1>
+<section id="the-sidebar-is-global" class="level2">
+<h2 class="anchored" data-anchor-id="the-sidebar-is-global">The sidebar is global</h2>
+<p>The sidebar is passed directly to <code>page_navbar()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">page_navbar</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">sidebar =</span> <span class="fu">sidebar</span>(...),</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Overview&quot;</span>, ...),</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Plot&quot;</span>, ...),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Table&quot;</span>, ...)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>That means the sidebar is part of the whole app layout. It is not owned by one tab.</p>
+</section>
+<section id="the-reactive-data-is-shared" class="level2">
+<h2 class="anchored" data-anchor-id="the-reactive-data-is-shared">The reactive data is shared</h2>
+<p>The server creates one filtered dataset:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>filtered_cars <span class="ot">&lt;-</span> <span class="fu">reactive</span>({</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  cars <span class="sc">|&gt;</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>      cyl <span class="sc">%in%</span> input<span class="sc">$</span>cylinders,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>      am <span class="sc">%in%</span> input<span class="sc">$</span>transmission</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Every output uses <code>filtered_cars()</code>. This keeps the behavior consistent across tabs.</p>
+</section>
+<section id="the-tabs-are-only-views" class="level2">
+<h2 class="anchored" data-anchor-id="the-tabs-are-only-views">The tabs are only views</h2>
+<p>The tabs do not each define their own filtering logic. They are different views of the same project state:</p>
+<ul>
+<li>overview numbers</li>
+<li>plot</li>
+<li>table</li>
+<li>notes</li>
+</ul>
+<p>This makes the app easier to maintain. When the project-level filters change, all tabs update automatically.</p>
+</section>
+</section>
+<section id="moving-a-control-into-one-tab" class="level1">
+<h1>Moving a control into one tab</h1>
+<p>Not every input belongs in the project-level sidebar. A good rule is:</p>
+<ul>
+<li>put inputs in the sidebar when they affect the whole app</li>
+<li>put inputs inside a tab when they only affect that tab</li>
+</ul>
+<p>In this app, <code>show_smooth</code> only affects the plot. It does not change the overview values, the table, or the project notes. That makes it a good candidate for moving into the Plot tab.</p>
+<section id="remove-it-from-the-sidebar" class="level2">
+<h2 class="anchored" data-anchor-id="remove-it-from-the-sidebar">Remove it from the sidebar</h2>
+<p>First, remove this input from the <code>sidebar()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">checkboxInput</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">inputId =</span> <span class="st">&quot;show_smooth&quot;</span>,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">label =</span> <span class="st">&quot;Show trend line&quot;</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">value =</span> <span class="cn">TRUE</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>After removing it, the sidebar contains only project-level controls:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>sidebar <span class="ot">=</span> <span class="fu">sidebar</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Project controls&quot;</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">width =</span> <span class="dv">300</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">inputId =</span> <span class="st">&quot;cylinders&quot;</span>,</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Cylinders&quot;</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl),</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>cyl)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">checkboxGroupInput</span>(</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">inputId =</span> <span class="st">&quot;transmission&quot;</span>,</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Transmission&quot;</span>,</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">choices =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am),</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">selected =</span> <span class="fu">levels</span>(cars<span class="sc">$</span>am)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">selectInput</span>(</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">inputId =</span> <span class="st">&quot;metric&quot;</span>,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="st">&quot;Main metric&quot;</span>,</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">choices =</span> metric_choices,</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">selected =</span> <span class="st">&quot;mpg&quot;</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="add-it-to-the-plot-tab" class="level2">
+<h2 class="anchored" data-anchor-id="add-it-to-the-plot-tab">Add it to the Plot tab</h2>
+<p>Then add the checkbox to the Plot tab. One simple option is to place it inside the plot card, above the plot output:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nav_panel</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Plot&quot;</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">card</span>(</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">full_screen =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">card_header</span>(<span class="fu">textOutput</span>(<span class="st">&quot;plot_title&quot;</span>)),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">checkboxInput</span>(</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">inputId =</span> <span class="st">&quot;show_smooth&quot;</span>,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">label =</span> <span class="st">&quot;Show trend line&quot;</span>,</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="cn">TRUE</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plotOutput</span>(<span class="st">&quot;metric_plot&quot;</span>, <span class="at">height =</span> <span class="dv">480</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The server code does not need to change. This line still works:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">isTRUE</span>(input<span class="sc">$</span>show_smooth)) {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> p <span class="sc">+</span> <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">&quot;lm&quot;</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The input is in a different place in the UI, but it still has the same <code>inputId</code>. In a regular Shiny app, input IDs belong to the app session, not to a visual container. Moving the input from the sidebar into the Plot tab changes where the user sees it, not how the server reads it.</p>
+</section>
+<section id="why-this-is-better" class="level2">
+<h2 class="anchored" data-anchor-id="why-this-is-better">Why this is better</h2>
+<p>This version makes the app easier to understand:</p>
+<ul>
+<li>the sidebar controls the whole project state</li>
+<li>the Plot tab owns the plot-only option</li>
+<li>the server still uses the same <code>input$show_smooth</code> value</li>
+</ul>
+<p>As apps grow, this distinction helps keep sidebars from becoming a catch-all for every possible option.</p>
+</section>
+</section>
+<section id="case-study-use-page_navbarid-page" class="level1">
+<h1>Case study: Use <code>page_navbar(id = &quot;page&quot;)</code></h1>
+<p>So far, the tabs are only visual containers. The server does not know which tab the user is viewing.</p>
+<p>Sometimes that is fine. But in larger apps, it is useful for the server to know the active page. Add an <code>id</code> to <code>page_navbar()</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">page_navbar</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;page&quot;</span>,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Motor Trend Explorer&quot;</span>,</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">theme =</span> <span class="fu">bs_theme</span>(</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">version =</span> <span class="dv">5</span>,</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">bootswatch =</span> <span class="st">&quot;flatly&quot;</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary =</span> <span class="st">&quot;#2c7fb8&quot;</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sidebar =</span> <span class="fu">sidebar</span>(...),</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Overview&quot;</span>, ...),</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Plot&quot;</span>, ...),</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Table&quot;</span>, ...),</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nav_panel</span>(<span class="st">&quot;Notes&quot;</span>, ...)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Now Shiny creates <code>input$page</code>. Its value is the currently selected navigation panel.</p>
+<section id="display-the-active-page" class="level2">
+<h2 class="anchored" data-anchor-id="display-the-active-page">Display the active page</h2>
+<p>Add a small status line to the sidebar:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>sidebar <span class="ot">=</span> <span class="fu">sidebar</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="st">&quot;Project controls&quot;</span>,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">width =</span> <span class="dv">300</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">checkboxGroupInput</span>(...),</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">checkboxGroupInput</span>(...),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">selectInput</span>(...),</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">checkboxInput</span>(...),</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">hr</span>(),</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">textOutput</span>(<span class="st">&quot;active_page&quot;</span>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Then read <code>input$page</code> in the server:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>active_page <span class="ot">&lt;-</span> <span class="fu">renderText</span>({</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste</span>(<span class="st">&quot;Current page:&quot;</span>, input<span class="sc">$</span>page)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This is the simplest use case: the UI can show navigation state without duplicating it manually.</p>
+</section>
+<section id="make-the-sidebar-page-aware" class="level2">
+<h2 class="anchored" data-anchor-id="make-the-sidebar-page-aware">Make the sidebar page-aware</h2>
+<p>The more useful pattern is to change helper text or controls depending on the active page.</p>
+<p>Add this placeholder to the sidebar:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uiOutput</span>(<span class="st">&quot;page_hint&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Then render different text for each page:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>page_hint <span class="ot">&lt;-</span> <span class="fu">renderUI</span>({</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">switch</span>(</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    input<span class="sc">$</span>page,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Overview&quot;</span> <span class="ot">=</span> tags<span class="sc">$</span><span class="fu">p</span>(<span class="st">&quot;Use this page to check high-level project metrics.&quot;</span>),</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Plot&quot;</span> <span class="ot">=</span> tags<span class="sc">$</span><span class="fu">p</span>(<span class="st">&quot;Use this page to inspect relationships in the filtered data.&quot;</span>),</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Table&quot;</span> <span class="ot">=</span> tags<span class="sc">$</span><span class="fu">p</span>(<span class="st">&quot;Use this page to review and export filtered records.&quot;</span>),</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Notes&quot;</span> <span class="ot">=</span> tags<span class="sc">$</span><span class="fu">p</span>(<span class="st">&quot;Use this page to inspect the current app state.&quot;</span>),</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    tags<span class="sc">$</span><span class="fu">p</span>(<span class="st">&quot;Choose a page from the navigation bar.&quot;</span>)</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This keeps the sidebar global, but lets it respond to the user’s current workflow.</p>
+</section>
+<section id="defer-expensive-work-until-a-page-is-opened" class="level2">
+<h2 class="anchored" data-anchor-id="defer-expensive-work-until-a-page-is-opened">Defer expensive work until a page is opened</h2>
+<p>Another practical use is avoiding expensive output work until a tab is actually visible. For example, imagine the table is slow because it comes from a database or a large file.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>output<span class="sc">$</span>cars_table <span class="ot">&lt;-</span> <span class="fu">renderDT</span>({</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">req</span>(input<span class="sc">$</span>page <span class="sc">==</span> <span class="st">&quot;Table&quot;</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filtered_cars</span>() <span class="sc">|&gt;</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(car, cyl, am, mpg, hp, wt, qsec, gear, carb) <span class="sc">|&gt;</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">datatable</span>(</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">rownames =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">options =</span> <span class="fu">list</span>(<span class="at">pageLength =</span> <span class="dv">10</span>, <span class="at">scrollX =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>With this pattern, the table code only runs after the user navigates to the Table page.</p>
+</section>
+<section id="track-app-usage" class="level2">
+<h2 class="anchored" data-anchor-id="track-app-usage">Track app usage</h2>
+<p>You can also observe page changes. This is useful for lightweight analytics, debugging, or saving user progress.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">observeEvent</span>(input<span class="sc">$</span>page, {</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">&quot;User opened page: &quot;</span>, input<span class="sc">$</span>page)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>In a production app, the same pattern could write to a log table, update a bookmark state, or trigger a page-specific data refresh.</p>
+</section>
+<section id="when-id-page-is-helpful" class="level2">
+<h2 class="anchored" data-anchor-id="when-id-page-is-helpful">When <code>id = &quot;page&quot;</code> is helpful</h2>
+<p>Use <code>page_navbar(id = &quot;page&quot;)</code> when the active tab should become part of the app’s reactive state.</p>
+<p>Good cases include:</p>
+<ul>
+<li>showing page-specific instructions or validation messages</li>
+<li>deferring slow plots, tables, models, or API calls until needed</li>
+<li>tracking which pages users visit</li>
+<li>preserving or restoring the user’s current page</li>
+<li>enabling page-specific downloads or actions</li>
+<li>warning users before they leave a page with unsaved selections</li>
+<li>changing sidebar controls based on the active workflow</li>
+</ul>
+<p>Avoid using it when tabs are only static layout sections and the server does not need to react to navigation.</p>
+</section>
+</section>
+<section id="exercise" class="level1">
+<h1>Exercise</h1>
+<p>Extend the app by adding one more project-level control to the sidebar.</p>
+<p>Good options:</p>
+<ul>
+<li>minimum horsepower</li>
+<li>gear count</li>
+<li>number of rows shown in the table</li>
+<li>plot color variable</li>
+</ul>
+<p>Then update at least two tabs so they respond to the new control.</p>
+</section>
+<section id="key-takeaway" class="level1">
+<h1>Key takeaway</h1>
+<p>Use a <code>bslib</code> page-level sidebar when a set of inputs should control an entire app. Put the shared data logic in one reactive expression, then let each tab focus only on its own view of that shared state.</p>
 </section>
 
 </main>

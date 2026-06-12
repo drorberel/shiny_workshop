@@ -43,7 +43,7 @@ preference (free co-pilot via github is ok)
 
 - [HTML_Rendering](https://drorberel.github.io/shiny_workshop/01_HTML_rendering.html)
 
-- [bslib](https://drorberel.github.io/shiny_workshop/06_bslib.html)
+- [bslib](https://drorberel.github.io/shiny_workshop/06-bslib.html)
 
 - [Shiny
   Modules](https://drorberel.github.io/shiny_workshop/01-shiny-modules.html)
