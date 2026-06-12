@@ -3,8 +3,10 @@ title: "Shiny Modules: From One App to Reusable Pieces"
 author: "Dror Berel"
 format:
   html:
+    page-layout: full
     toc: true
-    code-fold: false
+    toc-location: left
+    toc-depth: 3
     self-contained: true
 execute:
   echo: true
@@ -403,4 +405,4 @@ is especially helpful when building dashboards.
 
 
 ## Additional Resources
-<https://github.com/drorberel/ComplexHeatmapTeal>
+<https://github.com/drorberel/ComplexHeatmapTeal> 

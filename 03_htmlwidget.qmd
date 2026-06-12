@@ -1,10 +1,12 @@
 ---
-title: "write my own html widget"
+title: "Write my own html widget"
 author: "Dror Berel"
 format:
   html:
+    page-layout: full
     toc: true
-    code-fold: false
+    toc-location: left
+    toc-depth: 3
     self-contained: true
 execute:
   echo: true

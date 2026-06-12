@@ -3,8 +3,10 @@ title: "HTML rendering - What happens behind the scenes"
 author: "Dror Berel"
 format:
   html:
+    page-layout: full
     toc: true
-    code-fold: false
+    toc-location: left
+    toc-depth: 3
     self-contained: true
 execute:
   echo: true

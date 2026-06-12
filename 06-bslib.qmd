@@ -1,0 +1,750 @@
+---
+title: "bslib: Multi-Page Shiny Apps with Shared Sidebar Controls"
+author: "Dror Berel"
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    self-contained: true
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Learning goals
+
+By the end of this lesson, you should be able to:
+
+- use `bslib` as the main layout system for a Shiny app
+- create a Shiny app with multiple tabs or pages
+- place project-level inputs in one sidebar
+- reuse the same sidebar inputs across all tabs
+- organize outputs with `card()`, `layout_columns()`, and value boxes
+
+# Why `bslib`?
+
+Base Shiny layouts such as `fluidPage()`, `sidebarLayout()`, and
+`tabsetPanel()` are still useful, but many modern Shiny apps need more
+structure:
+
+- a consistent page layout
+- multiple views of the same project
+- cards that group related outputs
+- sidebars that can be opened, closed, and shared across pages
+- Bootstrap styling without writing much CSS
+
+The `bslib` package gives Shiny a more modern layout vocabulary. In
+this tutorial, we will build a small app where one sidebar controls all
+tabs.
+
+# Packages
+
+Install these packages if needed:
+
+```{r}
+# install.packages(c("shiny", "bslib", "bsicons", "dplyr", "ggplot2", "DT"))
+```
+
+Load the packages:
+
+```{r}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(DT)
+```
+
+# App idea
+
+We will build a small project dashboard using `mtcars`.
+
+The app has one project-level sidebar with controls for:
+
+- cylinder groups
+- transmission type
+- the main numeric metric
+- whether to show a trend line
+
+Those inputs are not local to one tab. They apply to every tab:
+
+- the overview tab shows summary values
+- the plot tab shows a filtered scatter plot
+- the table tab shows the filtered rows
+- the notes tab explains the current project state
+
+# Prepare the data
+
+The app uses `mtcars`, but we first create friendlier labels.
+
+```{r}
+cars <- mtcars |>
+  tibble::rownames_to_column("car") |>
+  mutate(
+    cyl = factor(
+      cyl,
+      levels = c(4, 6, 8),
+      labels = c("4 cylinders", "6 cylinders", "8 cylinders")
+    ),
+    am = factor(
+      am,
+      levels = c(0, 1),
+      labels = c("Automatic", "Manual")
+    ),
+    gear = factor(gear),
+    carb = factor(carb)
+  )
+
+head(cars)
+```
+
+# Step 1: Create the page shell
+
+The outer layout is `page_navbar()`. Each `nav_panel()` becomes one page
+inside the app.
+
+```{r, eval=FALSE}
+ui_panels_only <- page_navbar(
+  title = "Motor Trend Explorer",
+  theme = bs_theme(bootswatch = "flatly"),
+  nav_panel("Overview"),
+  nav_panel("Plot"),
+  nav_panel("Table"),
+  nav_panel("Notes")
+)
+```
+
+This gives us pages, but not yet a shared sidebar.
+
+# Step 2: Add a project-level sidebar
+
+The important pattern is that the sidebar belongs to `page_navbar()`,
+not to a single tab. Because of that, the inputs are available to every
+tab in the app.
+
+```{r, eval=FALSE}
+ui_with_sidebar <- page_navbar(
+  title = "Motor Trend Explorer",
+  theme = bs_theme(bootswatch = "flatly"),
+  sidebar = sidebar(
+    title = "Project controls",
+    checkboxGroupInput(
+      inputId = "cylinders",
+      label = "Cylinders",
+      choices = levels(cars$cyl),
+      selected = levels(cars$cyl)
+    ),
+    checkboxGroupInput(
+      inputId = "transmission",
+      label = "Transmission",
+      choices = levels(cars$am),
+      selected = levels(cars$am)
+    ),
+    selectInput(
+      inputId = "metric",
+      label = "Main metric",
+      choices = c(
+        "Miles per gallon" = "mpg",
+        "Horsepower" = "hp",
+        "Weight" = "wt",
+        "Quarter mile time" = "qsec"
+      ),
+      selected = "mpg"
+    ),
+    checkboxInput(
+      inputId = "show_smooth",
+      label = "Show trend line",
+      value = TRUE
+    )
+  ),
+  nav_panel("Overview"),
+  nav_panel("Plot"),
+  nav_panel("Table"),
+  nav_panel("Notes")
+)
+```
+
+# Step 3: Add cards and outputs
+
+`bslib::card()` is useful for grouping related content. Value boxes are
+good for high-level numbers. `layout_columns()` creates responsive
+columns that adjust as the screen changes.
+
+```{r, eval=FALSE}
+nav_panel(
+  "Overview",
+  layout_columns(
+    value_box(
+      title = "Cars",
+      value = textOutput("n_cars"),
+      showcase = bsicons::bs_icon("car-front")
+    ),
+    value_box(
+      title = "Average metric",
+      value = textOutput("avg_metric"),
+      showcase = bsicons::bs_icon("speedometer2")
+    ),
+    value_box(
+      title = "Best car",
+      value = textOutput("best_car"),
+      showcase = bsicons::bs_icon("trophy")
+    )
+  ),
+  card(
+    card_header("Summary by cylinder group"),
+    tableOutput("cylinder_summary")
+  )
+)
+```
+
+In a real app, each tab can have a different purpose while still using
+the same project-level filters.
+
+# Step 4: Define shared server logic
+
+The key server pattern is to create one filtered reactive expression.
+All tabs use this same reactive object.
+
+```{r, eval=FALSE}
+filtered_cars <- reactive({
+  req(input$cylinders, input$transmission)
+
+  cars |>
+    filter(
+      cyl %in% input$cylinders,
+      am %in% input$transmission
+    )
+})
+```
+
+This is the core idea of project-level UI parameters:
+
+- define the inputs once
+- define the filtering logic once
+- reuse the resulting reactive data everywhere
+
+# Complete app
+
+Save the following code as `app.R`, or run it from an R session.
+
+```{r, eval=FALSE}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(DT)
+
+cars <- mtcars |>
+  tibble::rownames_to_column("car") |>
+  mutate(
+    cyl = factor(
+      cyl,
+      levels = c(4, 6, 8),
+      labels = c("4 cylinders", "6 cylinders", "8 cylinders")
+    ),
+    am = factor(
+      am,
+      levels = c(0, 1),
+      labels = c("Automatic", "Manual")
+    ),
+    gear = factor(gear),
+    carb = factor(carb)
+  )
+
+metric_choices <- c(
+  "Miles per gallon" = "mpg",
+  "Horsepower" = "hp",
+  "Weight" = "wt",
+  "Quarter mile time" = "qsec"
+)
+
+ui <- page_navbar(
+  title = "Motor Trend Explorer",
+  theme = bs_theme(
+    version = 5,
+    bootswatch = "flatly",
+    primary = "#2c7fb8"
+  ),
+  sidebar = sidebar(
+    title = "Project controls",
+    width = 300,
+    checkboxGroupInput(
+      inputId = "cylinders",
+      label = "Cylinders",
+      choices = levels(cars$cyl),
+      selected = levels(cars$cyl)
+    ),
+    checkboxGroupInput(
+      inputId = "transmission",
+      label = "Transmission",
+      choices = levels(cars$am),
+      selected = levels(cars$am)
+    ),
+    selectInput(
+      inputId = "metric",
+      label = "Main metric",
+      choices = metric_choices,
+      selected = "mpg"
+    ),
+    checkboxInput(
+      inputId = "show_smooth",
+      label = "Show trend line",
+      value = TRUE
+    )
+  ),
+  nav_panel(
+    "Overview",
+    layout_columns(
+      value_box(
+        title = "Cars",
+        value = textOutput("n_cars"),
+        showcase = bsicons::bs_icon("car-front")
+      ),
+      value_box(
+        title = "Average metric",
+        value = textOutput("avg_metric"),
+        showcase = bsicons::bs_icon("speedometer2")
+      ),
+      value_box(
+        title = "Best car",
+        value = textOutput("best_car"),
+        showcase = bsicons::bs_icon("trophy")
+      )
+    ),
+    card(
+      card_header("Summary by cylinder group"),
+      tableOutput("cylinder_summary")
+    )
+  ),
+  nav_panel(
+    "Plot",
+    card(
+      full_screen = TRUE,
+      card_header(textOutput("plot_title")),
+      plotOutput("metric_plot", height = 480)
+    )
+  ),
+  nav_panel(
+    "Table",
+    card(
+      full_screen = TRUE,
+      card_header("Filtered cars"),
+      DTOutput("cars_table")
+    )
+  ),
+  nav_panel(
+    "Notes",
+    layout_columns(
+      card(
+        card_header("Current project state"),
+        verbatimTextOutput("project_state")
+      ),
+      card(
+        card_header("Pattern"),
+        tags$p(
+          "The sidebar is attached to page_navbar(), so the controls are ",
+          "available across all nav panels."
+        ),
+        tags$p(
+          "The server creates one filtered reactive dataset and every tab ",
+          "uses that same reactive object."
+        )
+      )
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  filtered_cars <- reactive({
+    req(input$cylinders, input$transmission)
+
+    cars |>
+      filter(
+        cyl %in% input$cylinders,
+        am %in% input$transmission
+      )
+  })
+
+  selected_metric_label <- reactive({
+    names(metric_choices)[match(input$metric, metric_choices)]
+  })
+
+  output$n_cars <- renderText({
+    nrow(filtered_cars())
+  })
+
+  output$avg_metric <- renderText({
+    value <- mean(filtered_cars()[[input$metric]], na.rm = TRUE)
+    round(value, 1)
+  })
+
+  output$best_car <- renderText({
+    data <- filtered_cars()
+    req(nrow(data) > 0)
+
+    data$car[which.max(data[[input$metric]])]
+  })
+
+  output$cylinder_summary <- renderTable({
+    filtered_cars() |>
+      group_by(cyl) |>
+      summarise(
+        cars = n(),
+        avg_metric = round(mean(.data[[input$metric]], na.rm = TRUE), 1),
+        avg_mpg = round(mean(mpg, na.rm = TRUE), 1),
+        .groups = "drop"
+      )
+  })
+
+  output$plot_title <- renderText({
+    paste(selected_metric_label(), "by vehicle weight")
+  })
+
+  output$metric_plot <- renderPlot({
+    p <- ggplot(
+      filtered_cars(),
+      aes(x = wt, y = .data[[input$metric]], color = cyl)
+    ) +
+      geom_point(size = 3, alpha = 0.85) +
+      labs(
+        x = "Weight",
+        y = selected_metric_label(),
+        color = "Cylinders"
+      ) +
+      theme_minimal(base_size = 13)
+
+    if (isTRUE(input$show_smooth)) {
+      p <- p + geom_smooth(method = "lm", se = FALSE, linewidth = 0.8)
+    }
+
+    p
+  })
+
+  output$cars_table <- renderDT({
+    filtered_cars() |>
+      select(car, cyl, am, mpg, hp, wt, qsec, gear, carb) |>
+      datatable(
+        rownames = FALSE,
+        options = list(pageLength = 10, scrollX = TRUE)
+      )
+  })
+
+  output$project_state <- renderPrint({
+    list(
+      cylinders = input$cylinders,
+      transmission = input$transmission,
+      metric = selected_metric_label(),
+      rows_after_filtering = nrow(filtered_cars())
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+# What to notice
+
+## The sidebar is global
+
+The sidebar is passed directly to `page_navbar()`:
+
+```{r, eval=FALSE}
+page_navbar(
+  sidebar = sidebar(...),
+  nav_panel("Overview", ...),
+  nav_panel("Plot", ...),
+  nav_panel("Table", ...)
+)
+```
+
+That means the sidebar is part of the whole app layout. It is not owned
+by one tab.
+
+## The reactive data is shared
+
+The server creates one filtered dataset:
+
+```{r, eval=FALSE}
+filtered_cars <- reactive({
+  cars |>
+    filter(
+      cyl %in% input$cylinders,
+      am %in% input$transmission
+    )
+})
+```
+
+Every output uses `filtered_cars()`. This keeps the behavior consistent
+across tabs.
+
+## The tabs are only views
+
+The tabs do not each define their own filtering logic. They are
+different views of the same project state:
+
+- overview numbers
+- plot
+- table
+- notes
+
+This makes the app easier to maintain. When the project-level filters
+change, all tabs update automatically.
+
+# Moving a control into one tab
+
+Not every input belongs in the project-level sidebar. A good rule is:
+
+- put inputs in the sidebar when they affect the whole app
+- put inputs inside a tab when they only affect that tab
+
+In this app, `show_smooth` only affects the plot. It does not change the
+overview values, the table, or the project notes. That makes it a good
+candidate for moving into the Plot tab.
+
+## Remove it from the sidebar
+
+First, remove this input from the `sidebar()`:
+
+```{r, eval=FALSE}
+checkboxInput(
+  inputId = "show_smooth",
+  label = "Show trend line",
+  value = TRUE
+)
+```
+
+After removing it, the sidebar contains only project-level controls:
+
+```{r, eval=FALSE}
+sidebar = sidebar(
+  title = "Project controls",
+  width = 300,
+  checkboxGroupInput(
+    inputId = "cylinders",
+    label = "Cylinders",
+    choices = levels(cars$cyl),
+    selected = levels(cars$cyl)
+  ),
+  checkboxGroupInput(
+    inputId = "transmission",
+    label = "Transmission",
+    choices = levels(cars$am),
+    selected = levels(cars$am)
+  ),
+  selectInput(
+    inputId = "metric",
+    label = "Main metric",
+    choices = metric_choices,
+    selected = "mpg"
+  )
+)
+```
+
+## Add it to the Plot tab
+
+Then add the checkbox to the Plot tab. One simple option is to place it
+inside the plot card, above the plot output:
+
+```{r, eval=FALSE}
+nav_panel(
+  "Plot",
+  card(
+    full_screen = TRUE,
+    card_header(textOutput("plot_title")),
+    checkboxInput(
+      inputId = "show_smooth",
+      label = "Show trend line",
+      value = TRUE
+    ),
+    plotOutput("metric_plot", height = 480)
+  )
+)
+```
+
+The server code does not need to change. This line still works:
+
+```{r, eval=FALSE}
+if (isTRUE(input$show_smooth)) {
+  p <- p + geom_smooth(method = "lm", se = FALSE, linewidth = 0.8)
+}
+```
+
+The input is in a different place in the UI, but it still has the same
+`inputId`. In a regular Shiny app, input IDs belong to the app session,
+not to a visual container. Moving the input from the sidebar into the
+Plot tab changes where the user sees it, not how the server reads it.
+
+## Why this is better
+
+This version makes the app easier to understand:
+
+- the sidebar controls the whole project state
+- the Plot tab owns the plot-only option
+- the server still uses the same `input$show_smooth` value
+
+As apps grow, this distinction helps keep sidebars from becoming a
+catch-all for every possible option.
+
+# Case study: Use `page_navbar(id = "page")`
+
+So far, the tabs are only visual containers. The server does not know
+which tab the user is viewing.
+
+Sometimes that is fine. But in larger apps, it is useful for the server
+to know the active page. Add an `id` to `page_navbar()`:
+
+```{r, eval=FALSE}
+ui <- page_navbar(
+  id = "page",
+  title = "Motor Trend Explorer",
+  theme = bs_theme(
+    version = 5,
+    bootswatch = "flatly",
+    primary = "#2c7fb8"
+  ),
+  sidebar = sidebar(...),
+  nav_panel("Overview", ...),
+  nav_panel("Plot", ...),
+  nav_panel("Table", ...),
+  nav_panel("Notes", ...)
+)
+```
+
+Now Shiny creates `input$page`. Its value is the currently selected
+navigation panel.
+
+## Display the active page
+
+Add a small status line to the sidebar:
+
+```{r, eval=FALSE}
+sidebar = sidebar(
+  title = "Project controls",
+  width = 300,
+  checkboxGroupInput(...),
+  checkboxGroupInput(...),
+  selectInput(...),
+  checkboxInput(...),
+  hr(),
+  textOutput("active_page")
+)
+```
+
+Then read `input$page` in the server:
+
+```{r, eval=FALSE}
+output$active_page <- renderText({
+  paste("Current page:", input$page)
+})
+```
+
+This is the simplest use case: the UI can show navigation state without
+duplicating it manually.
+
+## Make the sidebar page-aware
+
+The more useful pattern is to change helper text or controls depending
+on the active page.
+
+Add this placeholder to the sidebar:
+
+```{r, eval=FALSE}
+uiOutput("page_hint")
+```
+
+Then render different text for each page:
+
+```{r, eval=FALSE}
+output$page_hint <- renderUI({
+  switch(
+    input$page,
+    "Overview" = tags$p("Use this page to check high-level project metrics."),
+    "Plot" = tags$p("Use this page to inspect relationships in the filtered data."),
+    "Table" = tags$p("Use this page to review and export filtered records."),
+    "Notes" = tags$p("Use this page to inspect the current app state."),
+    tags$p("Choose a page from the navigation bar.")
+  )
+})
+```
+
+This keeps the sidebar global, but lets it respond to the user's current
+workflow.
+
+## Defer expensive work until a page is opened
+
+Another practical use is avoiding expensive output work until a tab is
+actually visible. For example, imagine the table is slow because it
+comes from a database or a large file.
+
+```{r, eval=FALSE}
+output$cars_table <- renderDT({
+  req(input$page == "Table")
+
+  filtered_cars() |>
+    select(car, cyl, am, mpg, hp, wt, qsec, gear, carb) |>
+    datatable(
+      rownames = FALSE,
+      options = list(pageLength = 10, scrollX = TRUE)
+    )
+})
+```
+
+With this pattern, the table code only runs after the user navigates to
+the Table page.
+
+## Track app usage
+
+You can also observe page changes. This is useful for lightweight
+analytics, debugging, or saving user progress.
+
+```{r, eval=FALSE}
+observeEvent(input$page, {
+  message("User opened page: ", input$page)
+})
+```
+
+In a production app, the same pattern could write to a log table, update
+a bookmark state, or trigger a page-specific data refresh.
+
+## When `id = "page"` is helpful
+
+Use `page_navbar(id = "page")` when the active tab should become part of
+the app's reactive state.
+
+Good cases include:
+
+- showing page-specific instructions or validation messages
+- deferring slow plots, tables, models, or API calls until needed
+- tracking which pages users visit
+- preserving or restoring the user's current page
+- enabling page-specific downloads or actions
+- warning users before they leave a page with unsaved selections
+- changing sidebar controls based on the active workflow
+
+Avoid using it when tabs are only static layout sections and the server
+does not need to react to navigation.
+
+# Exercise
+
+Extend the app by adding one more project-level control to the sidebar.
+
+Good options:
+
+- minimum horsepower
+- gear count
+- number of rows shown in the table
+- plot color variable
+
+Then update at least two tabs so they respond to the new control.
+
+# Key takeaway
+
+Use a `bslib` page-level sidebar when a set of inputs should control an
+entire app. Put the shared data logic in one reactive expression, then
+let each tab focus only on its own view of that shared state.
