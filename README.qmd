@@ -44,9 +44,12 @@ Also recommended (but not mandatory): LLM pre-installed in your IDE of preferenc
 
 - [Crosstalk](https://drorberel.github.io/shiny_workshop/02-crosstalk.html)
 
-- [htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
+- [tsibbletalk](https://drorberel.github.io/shiny_workshop/07-tsibbletalk.html)
 
 - [R2D3](https://drorberel.github.io/shiny_workshop/05_r2d3.html)
+
+- [htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)
+
 
 # What to expect:
 

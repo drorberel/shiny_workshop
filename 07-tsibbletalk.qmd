@@ -1,0 +1,849 @@
+---
+title: "tsibbletalk: Crosstalk for Time Series in Shiny"
+author: "Dror Berel"
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    self-contained: true
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Learning goals
+
+By the end of this lesson, you should be able to:
+
+- explain why a `tsibble` is a better object than a plain data frame for
+  interactive time series work
+- identify the `index`, `key`, and measured variables in a time series
+  dataset
+- use `tsibbletalk::as_shared_tsibble()` to create Crosstalk-linked time
+  series views
+- combine linked Plotly displays with a Shiny module for interactive
+  time slicing
+
+# Why `tsibble`?
+
+A plain data frame can store time series data, but it does not tell R
+which column is time, which columns identify the observational unit, or
+whether rows form regular temporal sequences. Those details are usually
+left as informal knowledge in the analyst's head.
+
+A `tsibble` makes those details explicit:
+
+- the `index` is the time variable, such as date, month, quarter, or
+  timestamp
+- the `key` identifies one time series inside a larger panel
+- measured variables store the values observed over time
+- the object can carry interval information and supports time-aware
+  verbs such as `filter_index()`, `fill_gaps()`, and `index_by()`
+
+This matters in Shiny because time series apps usually need to preserve
+two kinds of identity at once:
+
+- temporal identity: what period is this observation from?
+- series identity: which region, sensor, product, patient, or portfolio
+  does this observation belong to?
+
+`tsibble` gives those concepts names in the data object itself. That
+makes the app code easier to reason about and reduces the chance that a
+plot, table, feature summary, or filter accidentally groups by the wrong
+columns.
+
+# Why `tsibbletalk`?
+
+The `crosstalk` package links HTML widgets through shared keys. That is
+useful, but time series data has a special shape: one logical item is
+often not one row. A single series may have many rows because it is
+observed repeatedly through time.
+
+The `tsibbletalk` package builds on that idea. Its GitHub README says a
+tsibble consists of an index, key, and measured variables, and that
+linked brushing by key can speed up exploratory time series graphics.
+The package adds a shared key to a tsibble so linked views can
+"crosstalk" across plots with or without Shiny.
+
+In practice, `tsibbletalk` helps you:
+
+- link a tree of series keys to a time series plot
+- link a time series plot to a feature plot, such as trend strength
+  against seasonal strength
+- preserve the tsibble's key/index semantics while using Plotly and
+  Crosstalk-style interaction
+- add a Shiny time-slicing module with `tsibbleWrapUI()` and
+  `tsibbleWrapServer()`
+
+Source: <https://github.com/earowang/tsibbletalk>
+
+# Packages
+
+Install the packages if needed. `tsibbletalk` is installed from GitHub.
+
+```{r, eval=FALSE}
+install.packages(c(
+  "shiny",
+  "bslib",
+  "dplyr",
+  "ggplot2",
+  "plotly",
+  "feasts",
+  "tsibble",
+  "tsibbledata",
+  "remotes"
+))
+
+remotes::install_github("earowang/tsibbletalk")
+```
+
+Load the packages:
+
+```{r, eval=FALSE}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(feasts)
+library(tsibble)
+library(tsibbledata)
+library(tsibbletalk) # pak::pak("earowang/tsibbletalk")
+```
+
+# The data
+
+This lesson uses the `tourism` data. It is already a panel of time
+series: trips are measured by quarter, and each series is identified by
+geography and travel purpose.
+
+```{r, eval=FALSE}
+tourism
+
+key_vars(tourism)
+index_var(tourism)
+```
+
+The important point is not just that `tourism` has a date-like column.
+The object knows which column is the time index and which columns form
+the series key. That is the structure `tsibbletalk` uses for linked
+time series exploration.
+
+# Rendered plot examples
+
+The complete Shiny app later in the tutorial uses `tourism` because it
+matches the `tsibbletalk` examples. This rendered HTML also includes a
+few evaluated plots so the page has visible output without launching a
+Shiny app.
+
+These plots use `aus_retail`, another tsibble dataset from
+`tsibbledata`. It is monthly, keyed by state and industry, and works
+well for demonstrating the same ideas: time index, series key,
+artificial missing observations, and feature-based annotations.
+
+```{r rendered-plot-setup, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tsibble)
+library(tsibbledata)
+library(feasts)
+
+retail_demo <- aus_retail |>
+  filter(
+    State %in% c("Victoria", "New South Wales"),
+    Industry == "Cafes, restaurants and takeaway food services"
+  ) |>
+  mutate(
+    Month_date = as.Date(Month),
+    Month_label = as.character(Month)
+  )
+```
+
+## Example 1: regular monthly series
+
+This first plot shows two monthly retail turnover series. The tsibble
+index is `Month`, and the key is the combination of `State` and
+`Industry`.
+
+```{r rendered-regular-series, fig.width=9, fig.height=4.8}
+retail_demo |>
+  ggplot(aes(x = Month_date, y = Turnover, colour = State)) +
+  geom_line(linewidth = 0.6) +
+  labs(
+    title = "Monthly cafe and restaurant turnover",
+    x = NULL,
+    y = "Turnover"
+  ) +
+  theme_minimal()
+```
+
+## Example 2: flagged time-window gaps
+
+The source series is regular, so this example removes a few known
+months to create teaching gaps. The red points mark observations where
+the gap from the previous observation in the same series is not one
+month.
+
+```{r rendered-gap-flagging, fig.width=9, fig.height=4.8}
+missing_months <- tibble::tribble(
+  ~State, ~Industry, ~Month,
+  "Victoria",
+  "Cafes, restaurants and takeaway food services",
+  tsibble::yearmonth("2012 Jan"),
+  "Victoria",
+  "Cafes, restaurants and takeaway food services",
+  tsibble::yearmonth("2012 Feb"),
+  "New South Wales",
+  "Cafes, restaurants and takeaway food services",
+  tsibble::yearmonth("2015 Jul")
+)
+
+retail_gap_demo <- retail_demo |>
+  anti_join(
+    missing_months,
+    by = c("State", "Industry", "Month")
+  ) |>
+  group_by_key() |>
+  arrange(Month, .by_group = TRUE) |>
+  mutate(
+    time_window_months = round(
+      as.numeric(Month_date - lag(Month_date)) / 30.4375
+    ),
+    time_window_flag = !is.na(time_window_months) &
+      time_window_months != 1
+  ) |>
+  ungroup()
+
+retail_gap_demo |>
+  ggplot(aes(x = Month_date, y = Turnover, colour = State)) +
+  geom_line(linewidth = 0.6, alpha = 0.7) +
+  geom_point(
+    data = retail_gap_demo |> filter(time_window_flag),
+    aes(
+      x = Month_date,
+      y = Turnover
+    ),
+    colour = "red",
+    size = 2.7
+  ) +
+  labs(
+    title = "Flagging observations after irregular time gaps",
+    subtitle = "Red points follow artificially removed months",
+    x = NULL,
+    y = "Turnover"
+  ) +
+  theme_minimal()
+```
+
+## Example 3: level-shift feature markers
+
+This plot uses `feasts::shift_level_max()` to identify the largest level
+shift in each series. The red points show where the returned
+`shift_level_index` maps back onto the ordered tsibble rows.
+
+```{r rendered-shift-level, fig.width=9, fig.height=4.8}
+retail_shift_base <- retail_demo |>
+  group_by_key() |>
+  arrange(Month, .by_group = TRUE) |>
+  mutate(.series_row = row_number()) |>
+  ungroup()
+
+shift_features <- retail_shift_base |>
+  features(
+    Turnover,
+    shift_level_max,
+    .period = 12
+  )
+
+retail_shift_plot <- retail_shift_base |>
+  left_join(
+    shift_features,
+    by = c("State", "Industry")
+  ) |>
+  mutate(
+    largest_shift_point = .series_row == shift_level_index
+  )
+
+retail_shift_plot |>
+  ggplot(aes(x = Month_date, y = Turnover, colour = State)) +
+  geom_line(linewidth = 0.6, alpha = 0.7) +
+  geom_point(
+    data = retail_shift_plot |> filter(largest_shift_point),
+    aes(
+      x = Month_date,
+      y = Turnover
+    ),
+    colour = "red",
+    size = 2.7
+  ) +
+  labs(
+    title = "Largest level shift detected with feasts::shift_level_max()",
+    x = NULL,
+    y = "Turnover"
+  ) +
+  theme_minimal()
+```
+
+# Create a shared tsibble
+
+`as_shared_tsibble()` converts a tsibble into a shared tsibble that can
+participate in Crosstalk-style linked views.
+
+```{r, eval=FALSE}
+tourism_shared <- tourism |>
+  as_shared_tsibble(spec = (State / Region) * Purpose)
+```
+
+The `spec` argument describes the key structure. In this example:
+
+- `State / Region` says regions are nested within states
+- `* Purpose` says each location is crossed with travel purpose
+
+That structure is useful for navigation. A user can select a state,
+region, or purpose and have the linked displays respond through the
+shared series key.
+
+# Linked views without Shiny
+
+This first example can work in a regular HTML document. The linked
+interaction happens in the browser.
+
+```{r, eval=FALSE}
+tourism_shared <- tourism |>
+  as_shared_tsibble(spec = (State / Region) * Purpose)
+
+key_tree <- plotly_key_tree(
+  tourism_shared,
+  height = 800,
+  width = 500
+)
+
+series_plot <- tourism_shared |>
+  ggplot(aes(x = Quarter, y = Trips)) +
+  geom_line(aes(group = Region), alpha = 0.45) +
+  facet_wrap(vars(Purpose), scales = "free_y") +
+  labs(
+    title = "Quarterly tourism trips",
+    x = NULL,
+    y = "Trips"
+  )
+
+tourism_features <- tourism_shared |>
+  features(Trips, feat_stl)
+
+feature_plot <- tourism_features |>
+  ggplot(aes(
+    x = trend_strength,
+    y = seasonal_strength_year
+  )) +
+  geom_point(aes(group = Region), alpha = 0.7) +
+  labs(
+    title = "Series features",
+    x = "Trend strength",
+    y = "Seasonal strength"
+  )
+
+subplot(
+  key_tree,
+  subplot(
+    ggplotly(series_plot, tooltip = c("Region", "Purpose")),
+    ggplotly(feature_plot, tooltip = c("Region", "Purpose")),
+    nrows = 2,
+    shareX = FALSE
+  ),
+  widths = c(0.35, 0.65)
+) |>
+  highlight(dynamic = TRUE)
+```
+
+There are three linked views:
+
+- the key tree helps navigate the hierarchy of available series
+- the line plot shows the time path
+- the feature plot summarizes each series as a point
+
+The same series key connects them. Selecting a series in one display can
+highlight the matching series in the other displays. This is the main
+reason to use `tsibbletalk` instead of manually wrapping a plain data
+frame in `crosstalk::SharedData`: the unit of interaction is a time
+series key, not an accidental row number.
+
+# Detect level shifts with `feasts`
+
+The `feasts` package is designed to work naturally with tsibble
+workflows. One useful feature function is `shift_level_max()`, which
+finds the largest mean shift between two consecutive sliding windows in
+a univariate time series.
+
+This is slightly different from shifting or realigning the raw data.
+`shift_level_max()` does not move observations. It returns two feature
+values:
+
+- the size of the largest level shift
+- the index position where that largest shift occurs
+
+That makes it useful in interactive time series apps because the app can
+surface the series with the largest structural changes, annotate the
+time plot, or let users select series based on level-shift behavior.
+
+```{r, eval=FALSE}
+tourism_shift_features <- tourism |>
+  features(
+    Trips,
+    shift_level_max,
+    .period = 4
+  )
+
+tourism_shift_features
+```
+
+The result is one row per tsibble key. For the `tourism` data, the key
+is the combination of `Region`, `State`, and `Purpose`. The feature
+columns describe the largest change in average `Trips` between adjacent
+windows and the position of that change within the series.
+
+```{r, eval=FALSE}
+largest_level_shifts <- tourism_shift_features |>
+  arrange(desc(shift_level_max)) |>
+  slice_head(n = 10)
+
+largest_level_shifts
+```
+
+This can be connected back to the time series plot. The next example
+joins the feature output back to the original tsibble and creates a
+simple flag for the time point where the largest level shift occurred.
+
+```{r, eval=FALSE}
+tourism_with_shift <- tourism |>
+  group_by_key() |>
+  mutate(.series_row = row_number()) |>
+  ungroup() |>
+  left_join(
+    tourism_shift_features,
+    by = c("Region", "State", "Purpose")
+  ) |>
+  mutate(
+    largest_shift_point = .series_row == shift_level_index
+  )
+
+tourism_with_shift |>
+  filter(largest_shift_point)
+```
+
+In a Shiny application, this gives you a useful pattern:
+
+- compute `shift_level_max()` after the user filters the tsibble
+- rank series by the largest level shift
+- show the selected series in a linked `tsibbletalk` plot
+- draw a marker where `.series_row` equals `shift_level_index`
+
+Here is a small plotting pattern:
+
+```{r, eval=FALSE}
+selected_series <- tourism_with_shift |>
+  filter(
+    State == "Victoria",
+    Purpose == "Holiday"
+  )
+
+selected_series |>
+  ggplot(aes(x = Quarter, y = Trips, group = Region)) +
+  geom_line(alpha = 0.45) +
+  geom_point(
+    data = selected_series |> filter(largest_shift_point),
+    colour = "red",
+    size = 2
+  ) +
+  facet_wrap(vars(Region), scales = "free_y") +
+  labs(
+    title = "Largest detected level shift by tourism series",
+    x = NULL,
+    y = "Trips"
+  )
+```
+
+This section also shows why the tsibble structure matters. The feature
+calculation is applied per series key, and the returned index position
+can be mapped back to the tsibble's ordered time index. With a plain
+data frame, you would need to manage that grouping and index logic
+manually.
+
+# Add Shiny for time slicing
+
+The previous example is client-side linked exploration. Shiny becomes
+useful when the app needs server-side behavior: changing time windows,
+recomputing summaries, downloading data, or preparing a filtered object
+for a model.
+
+`tsibbletalk` includes a Shiny module pair:
+
+- `tsibbleWrapUI(id)`
+- `tsibbleWrapServer(id, plot, period = ...)`
+
+The module wraps a time series plot with controls for slicing and
+dicing the time index.
+
+```{r, eval=FALSE}
+pedestrian_plot <- pedestrian |>
+  fill_gaps() |>
+  filter_index(~ "2015") |>
+  ggplot(aes(x = Date_Time, y = Count, colour = Sensor)) +
+  geom_line(linewidth = 0.2) +
+  facet_wrap(vars(Sensor), scales = "free_y") +
+  theme(legend.position = "none") +
+  labs(
+    title = "Pedestrian counts by sensor",
+    x = NULL,
+    y = "Count"
+  )
+
+ui <- fluidPage(
+  titlePanel("Interactive time slicing with tsibbletalk"),
+  tsibbleWrapUI("pedestrian")
+)
+
+server <- function(input, output, session) {
+  tsibbleWrapServer(
+    id = "pedestrian",
+    plot = pedestrian_plot,
+    period = "1 day"
+  )
+}
+
+shinyApp(ui, server)
+```
+
+This is different from a generic Shiny slider over row numbers. The
+module is built for a tsibble plot, where the index has temporal
+meaning. The user is slicing time, not arbitrary table positions.
+
+# Complete Shiny app
+
+This app combines ordinary Shiny controls with `tsibbletalk` linked
+views. The sidebar filters the dataset on the server. The main panel
+uses a shared tsibble to link the key tree, time series plot, and
+feature plot.
+
+## Time window length flagging
+
+The app also calculates the time window length between each observation
+and the previous observation in the same time series. For the
+quarterly `tourism` data, this gap is measured in months.
+
+The original `tourism` toy data is intentionally regular: each series is
+observed once per quarter, so nearly every consecutive gap is three
+months. That is good for teaching tsibble structure, but it does not
+produce many useful examples for gap flagging. To make the behavior
+visible in the tutorial, the app creates a small teaching copy of the
+data with a few observations removed. Those removals create artificial
+six-month gaps that the flagging controls can detect.
+
+Two sidebar inputs control the accepted range:
+
+- minimum allowed time window length
+- maximum allowed time window length
+
+Any observation with a gap outside that range is flagged and drawn as a
+red point in the time series plot. This is useful for spotting missing
+periods, irregularly spaced observations, or unexpected jumps in the
+time index after filtering.
+
+```{r, eval=FALSE}
+library(shiny)
+library(bslib)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(feasts)
+library(tsibble)
+library(tsibbledata)
+library(tsibbletalk)
+
+tourism_demo <- tourism |>
+  anti_join(
+    tibble::tribble(
+      ~Region, ~State, ~Purpose, ~Quarter,
+      "Ballarat", "Victoria", "Business", tsibble::yearquarter("2010 Q2"),
+      "Bendigo Loddon", "Victoria", "Holiday", tsibble::yearquarter("2012 Q3"),
+      "Blue Mountains", "New South Wales", "Visiting", tsibble::yearquarter("2014 Q1")
+    ),
+    by = c("Region", "State", "Purpose", "Quarter")
+  )
+
+ui <- page_sidebar(
+  title = "tsibbletalk tourism explorer",
+  theme = bs_theme(version = 5, bootswatch = "flatly"),
+  sidebar = sidebar(
+    width = 320,
+    selectInput(
+      inputId = "states",
+      label = "States",
+      choices = sort(unique(tourism_demo$State)),
+      selected = c("Victoria", "New South Wales"),
+      multiple = TRUE
+    ),
+    selectInput(
+      inputId = "purposes",
+      label = "Travel purpose",
+      choices = sort(unique(tourism_demo$Purpose)),
+      selected = sort(unique(tourism_demo$Purpose)),
+      multiple = TRUE
+    ),
+    sliderInput(
+      inputId = "year_range",
+      label = "Years",
+      min = 1998,
+      max = 2016,
+      value = c(2005, 2016),
+      sep = ""
+    ),
+    numericInput(
+      inputId = "min_gap_months",
+      label = "Minimum time window length, in months",
+      value = 3,
+      min = 1,
+      step = 1
+    ),
+    numericInput(
+      inputId = "max_gap_months",
+      label = "Maximum time window length, in months",
+      value = 3,
+      min = 1,
+      step = 1
+    )
+  ),
+  layout_columns(
+    col_widths = c(4, 8),
+    card(
+      card_header("Series navigation"),
+      plotlyOutput("key_tree", height = 700)
+    ),
+    card(
+      card_header("Linked time series views"),
+      plotlyOutput("linked_views", height = 700)
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  filtered_tourism <- reactive({
+    req(
+      input$states,
+      input$purposes,
+      input$year_range,
+      input$min_gap_months,
+      input$max_gap_months
+    )
+    validate(
+      need(
+        input$min_gap_months <= input$max_gap_months,
+        "The minimum time window length must be less than or equal to the maximum."
+      )
+    )
+
+    tourism_demo |>
+      mutate(
+        Quarter_date = as.Date(Quarter),
+        Quarter_label = as.character(Quarter),
+        Quarter_year = as.integer(format(Quarter_date, "%Y"))
+      ) |>
+      filter(
+        State %in% input$states,
+        Purpose %in% input$purposes,
+        Quarter_year >= input$year_range[1],
+        Quarter_year <= input$year_range[2]
+      ) |>
+      group_by_key() |>
+      arrange(Quarter, .by_group = TRUE) |>
+      mutate(
+        time_window_months = round(
+          as.numeric(Quarter_date - lag(Quarter_date)) / 30.4375
+        ),
+        time_window_flag = !is.na(time_window_months) &
+          (
+            time_window_months < input$min_gap_months |
+              time_window_months > input$max_gap_months
+          )
+      )
+  })
+
+  shared_tourism <- reactive({
+    filtered_tourism() |>
+      as_shared_tsibble(spec = (State / Region) * Purpose)
+  })
+
+  output$key_tree <- renderPlotly({
+    plotly_key_tree(shared_tourism(), height = 700)
+  })
+
+  output$linked_views <- renderPlotly({
+    flagged_points <- shared_tourism() |>
+      filter(time_window_flag)
+
+    series_plot <- shared_tourism() |>
+      ggplot(aes(x = Quarter_date, y = Trips)) +
+      geom_line(aes(group = Region), alpha = 0.5) +
+      geom_point(
+        data = flagged_points,
+        aes(
+          text = paste(
+            "Region:", Region,
+            "<br>Purpose:", Purpose,
+            "<br>Quarter:", Quarter_label,
+            "<br>Time window:", time_window_months, "months"
+          )
+        ),
+        colour = "red",
+        size = 2.2
+      ) +
+      facet_wrap(vars(Purpose), scales = "free_y") +
+      labs(
+        x = NULL,
+        y = "Trips",
+        caption = "Red points mark observations where the gap from the previous observation is outside the allowed range."
+      )
+
+    feature_data <- shared_tourism() |>
+      features(Trips, feat_stl)
+
+    feature_plot <- feature_data |>
+      ggplot(aes(
+        x = trend_strength,
+        y = seasonal_strength_year
+      )) +
+      geom_point(aes(group = Region), alpha = 0.75) +
+      labs(
+        x = "Trend strength",
+        y = "Seasonal strength"
+      )
+
+    subplot(
+      ggplotly(
+        series_plot,
+        tooltip = c("Region", "Purpose", "time_window_months", "text")
+      ),
+      ggplotly(feature_plot, tooltip = c("Region", "Purpose")),
+      nrows = 2,
+      shareX = FALSE
+    ) |>
+      highlight(dynamic = TRUE)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+# How the app works
+
+The app has two layers:
+
+- Shiny filters rebuild the tsibble on the server.
+- Shiny gap controls calculate the time window length between
+  consecutive observations within each series key.
+- `tsibbletalk` preserves the shared time series key for linked views in
+  the browser.
+
+That separation is useful. Shiny owns the expensive or stateful work:
+filtering the source data, recomputing features, and deciding which data
+is available. `tsibbletalk` owns the linked visual exploration: when a
+series is selected in one view, the other views know which series should
+respond.
+
+The time window calculation happens after the user filters the data.
+Within each tsibble key, the app sorts by `Quarter`, compares each
+observation's `Quarter_date` to the previous observation's
+`Quarter_date`, and stores the gap as `time_window_months`. `Quarter`
+remains the tsibble index; `Quarter_date`, `Quarter_label`, and
+`Quarter_year` are helper columns for Shiny filtering, Plotly display,
+and gap calculation. Observations are flagged when the gap is below the
+minimum or above the maximum selected in the sidebar. The first
+observation in each series has no previous timestamp, so it is not
+flagged.
+
+The app uses `tourism_demo`, not the untouched `tourism` object. This is
+deliberate. The source toy data is very regular, so the default allowed
+range of exactly three months would usually flag nothing. Removing a few
+known observations creates predictable six-month gaps and lets the
+workshop demonstrate what the flagging logic is supposed to catch. In a
+real project, the same calculation would usually run on the original
+incoming data to reveal naturally missing or irregular observations.
+
+# Practical guidance
+
+Use a `tsibble` when:
+
+- each observational unit is measured repeatedly through time
+- the app needs to distinguish a time index from ordinary numeric
+  columns
+- the app needs to group by series keys consistently
+- you plan to compute time series features, fill gaps, aggregate by
+  time, or filter by index
+
+Use `tsibbletalk` when:
+
+- multiple time series graphics should be linked by series identity
+- the data has nested or crossed key variables
+- users need to move between overview, individual series, and feature
+  summaries
+- Shiny controls should change the time series dataset while linked
+  browser-side exploration remains available
+
+For small one-off charts, a plain data frame plus Plotly may be enough.
+For panel time series apps, `tsibble` and `tsibbletalk` make the
+important structure explicit, which usually leads to clearer app code
+and better user interaction.
+
+# Common pitfalls
+
+## Treating rows as series
+
+In regular Crosstalk examples, one row is often one plotted item. In
+time series data, one series usually spans many rows. Use the tsibble
+key as the linked identity.
+
+## Hiding the time index
+
+Do not convert dates or quarters to labels too early. Keep the index as
+a real temporal variable so tsibble verbs and time-aware controls can
+work correctly.
+
+## Forgetting the key structure
+
+For hierarchical panels, pass a meaningful `spec` to
+`as_shared_tsibble()`. The key tree is only useful when the hierarchy
+matches the domain.
+
+## Expecting Crosstalk to replace Shiny
+
+Crosstalk-style linking is excellent for browser-side interaction.
+Shiny is still needed for server-side computation, downloads, model
+fitting, database queries, and outputs that depend on reactive state.
+
+# Exercises
+
+1.  Change the tourism app to start with only one selected state.
+2.  Add a `selectInput()` for `Region` after the state has been chosen.
+3.  Replace `feat_stl` with another feature set from `feasts`.
+4.  Use `shift_level_max()` to rank regions by their largest level
+    shift.
+5.  Add a download button that writes the Shiny-filtered tsibble to CSV.
+6.  Build a second app using `pedestrian` and
+    `tsibbleWrapUI()`/`tsibbleWrapServer()`.
+
+# Additional resources
+
+- `tsibbletalk` GitHub repository:
+  <https://github.com/earowang/tsibbletalk>
+- `shift_level_max()` reference:
+  <https://feasts.tidyverts.org/reference/shift_level_max.html>
+- Crosstalk documentation:
+  <https://rstudio.github.io/crosstalk/>
+- Tsibble paper:
+  <https://arxiv.org/abs/1901.10257>
