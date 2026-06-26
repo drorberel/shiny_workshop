@@ -52,6 +52,8 @@ preference (free co-pilot via github is ok)
 
 - [tsibbletalk](https://drorberel.github.io/shiny_workshop/07-tsibbletalk.html)
 
+- [Rhino](https://drorberel.github.io/shiny_workshop/08-rhino.html)
+
 - [R2D3](https://drorberel.github.io/shiny_workshop/05_r2d3.html)
 
 - [htmlwidget](https://drorberel.github.io/shiny_workshop/03_htmlwidget.html)

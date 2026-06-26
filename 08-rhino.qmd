@@ -1,0 +1,549 @@
+---
+title: "Rhino: When a Shiny App Becomes a Software Project"
+author: "Dror Berel"
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    self-contained: true
+execute:
+  echo: true
+editor_options: 
+  chunk_output_type: console
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Learning goals
+
+By the end of this lesson, you should be able to:
+
+- explain what Rhino adds on top of standard Shiny
+- compare a regular Shiny app structure with a Rhino app structure
+- recognize when Rhino is useful and when it is probably too much
+- write a small Shiny example in both styles
+- understand the basic Rhino workflow
+
+# What is Rhino?
+
+Rhino is an R package and project framework for building Shiny apps. It
+does not replace Shiny. It gives Shiny apps a more formal project
+structure.
+
+Standard Shiny answers this question:
+
+> How do I make an interactive web app in R?
+
+Rhino answers a different question:
+
+> How do I organize, test, and maintain a Shiny app as it grows?
+
+That difference matters. A small app can be easier to build with plain
+Shiny. A larger app with multiple developers, modules, tests, and
+deployment requirements can benefit from Rhino.
+
+# Packages
+
+Install these packages if needed:
+
+```{r}
+# install.packages(c("shiny", "rhino", "ggplot2", "dplyr"))
+```
+
+For most of this lesson, the examples are shown as code snippets rather
+than launched inside this Quarto document.
+
+# Standard Shiny in one file
+
+The smallest useful Shiny app can live in one `app.R` file.
+
+```{r, eval=FALSE}
+library(shiny)
+library(ggplot2)
+
+ui <- fluidPage(
+  titlePanel("Standard Shiny"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        "x",
+        "X variable",
+        choices = c("disp", "hp", "wt", "qsec"),
+        selected = "wt"
+      )
+    ),
+    mainPanel(
+      plotOutput("scatter")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  output$scatter <- renderPlot({
+    ggplot(mtcars, aes(x = .data[[input$x]], y = mpg)) +
+      geom_point(size = 3) +
+      labs(x = input$x, y = "mpg")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+This is a good structure when:
+
+- the app is small
+- one person owns most of the code
+- the app has only a few inputs and outputs
+- there are few reusable pieces
+- testing is mostly manual
+
+There is nothing wrong with this. Many useful Shiny apps should stay this
+simple.
+
+# Where standard Shiny starts to feel crowded
+
+As a Shiny app grows, `app.R` often starts collecting many different
+responsibilities:
+
+- UI layout
+- data loading
+- data cleaning
+- reactive logic
+- plots
+- tables
+- modules
+- helper functions
+- CSS and JavaScript
+- tests or deployment scripts
+
+The app may still work, but it becomes harder to answer basic questions:
+
+- Where should new code go?
+- Which functions are safe to reuse?
+- How do we test this piece without running the whole app?
+- How do two people work on the app without editing the same file?
+- How do we keep code style consistent?
+
+Rhino is designed for this stage.
+
+# The same idea as a module
+
+Before thinking about Rhino, it helps to separate the app into a Shiny
+module. This is still standard Shiny.
+
+```{r, eval=FALSE}
+library(shiny)
+library(ggplot2)
+
+scatter_ui <- function(id) {
+  ns <- NS(id)
+
+  tagList(
+    selectInput(
+      ns("x"),
+      "X variable",
+      choices = c("disp", "hp", "wt", "qsec"),
+      selected = "wt"
+    ),
+    plotOutput(ns("scatter"))
+  )
+}
+
+scatter_server <- function(id, data) {
+  moduleServer(id, function(input, output, session) {
+    output$scatter <- renderPlot({
+      ggplot(data(), aes(x = .data[[input$x]], y = mpg)) +
+        geom_point(size = 3) +
+        labs(x = input$x, y = "mpg")
+    })
+  })
+}
+
+ui <- fluidPage(
+  titlePanel("Standard Shiny with a module"),
+  scatter_ui("cars")
+)
+
+server <- function(input, output, session) {
+  cars <- reactive(mtcars)
+  scatter_server("cars", cars)
+}
+
+shinyApp(ui, server)
+```
+
+This is already better. The plot feature has a clear UI function and a
+clear server function.
+
+Rhino builds on this kind of thinking. It encourages the app to be made
+from small, named pieces instead of one long script.
+
+# Creating a Rhino app
+
+A Rhino app starts as a project.
+
+```{r, eval=FALSE}
+rhino::init("cars_app")
+```
+
+That creates a folder structure for the app. A typical Rhino project has
+places for app code, tests, static assets, and configuration.
+
+The exact folder contents can vary by Rhino version, but the important
+idea is stable:
+
+- app code lives in a predictable place
+- modules are stored as separate files
+- app startup is separated from feature code
+- tests and tooling are part of the project from the beginning
+
+# A small Rhino-style module
+
+In a Rhino project, a feature usually lives in its own module file.
+
+For example, a file like `app/view/scatter.R` might contain:
+
+```{r, eval=FALSE}
+box::use(
+  ggplot2[ggplot, aes, geom_point, labs],
+  shiny[NS, moduleServer, plotOutput, renderPlot, selectInput, tagList]
+)
+
+ui <- function(id) {
+  ns <- NS(id)
+
+  tagList(
+    selectInput(
+      ns("x"),
+      "X variable",
+      choices = c("disp", "hp", "wt", "qsec"),
+      selected = "wt"
+    ),
+    plotOutput(ns("scatter"))
+  )
+}
+
+server <- function(id, data) {
+  moduleServer(id, function(input, output, session) {
+    output$scatter <- renderPlot({
+      ggplot(data(), aes(x = .data[[input$x]], y = mpg)) +
+        geom_point(size = 3) +
+        labs(x = input$x, y = "mpg")
+    })
+  })
+}
+```
+
+This looks similar to a normal Shiny module, but there are two important
+differences:
+
+- the module is in its own file by default
+- dependencies are imported explicitly with `box::use()`
+
+# What does `box::use()` do here?
+
+Rhino uses the `box` package to make R code behave more like modules in
+Python or JavaScript.
+
+In regular Shiny, we usually write:
+
+```{r, eval=FALSE}
+library(shiny)
+library(ggplot2)
+```
+
+That loads the packages and attaches many exported names into the current
+search path. After `library(shiny)`, functions like `fluidPage()`,
+`selectInput()`, and `renderPlot()` are available by name.
+
+That is convenient, but it is also broad. In a large app, it can become
+harder to know where a function came from, and two packages can export
+functions with the same name.
+
+With `box::use()`, each file says exactly what it needs:
+
+```{r, eval=FALSE}
+box::use(
+  ggplot2[ggplot, aes, geom_point, labs],
+  shiny[NS, moduleServer, plotOutput, renderPlot, selectInput, tagList]
+)
+```
+
+Read this as:
+
+- from `ggplot2`, import only `ggplot()`, `aes()`, `geom_point()`, and
+  `labs()`
+- from `shiny`, import only `NS()`, `moduleServer()`, `plotOutput()`,
+  `renderPlot()`, `selectInput()`, and `tagList()`
+
+Those names are then available inside this file:
+
+```{r, eval=FALSE}
+plotOutput(ns("scatter"))
+
+output$scatter <- renderPlot({
+  ggplot(data(), aes(x = .data[[input$x]], y = mpg)) +
+    geom_point(size = 3) +
+    labs(x = input$x, y = "mpg")
+})
+```
+
+This makes the dependency list part of the module. If this file uses
+`selectInput()`, the import line tells us it came from `shiny`. If this
+file uses `geom_point()`, the import line tells us it came from
+`ggplot2`.
+
+# Common `box::use()` patterns
+
+There are a few useful ways to read and write `box::use()`.
+
+Import selected functions:
+
+```{r, eval=FALSE}
+box::use(
+  shiny[selectInput, plotOutput, renderPlot]
+)
+```
+
+This makes those functions available directly as `selectInput()`,
+`plotOutput()`, and `renderPlot()`.
+
+Import a package without attaching its functions:
+
+```{r, eval=FALSE}
+box::use(
+  ggplot2
+)
+```
+
+Now the package is available as `ggplot2`, but its functions are not
+attached directly. You would call them with `$`:
+
+```{r, eval=FALSE}
+ggplot2$ggplot(mtcars, ggplot2$aes(wt, mpg)) +
+  ggplot2$geom_point()
+```
+
+This is very explicit, but it can feel verbose for common plotting code.
+That is why the earlier example imports only the few `ggplot2` functions
+it needs.
+
+Import a package with an alias:
+
+```{r, eval=FALSE}
+box::use(
+  plt = ggplot2
+)
+
+plt$ggplot(mtcars, plt$aes(wt, mpg)) +
+  plt$geom_point()
+```
+
+This can be useful when a package name is long or when you want to make
+the code read more clearly.
+
+Import all exported functions:
+
+```{r, eval=FALSE}
+box::use(
+  shiny[...]
+)
+```
+
+The `...` means "all exported names from this package". This is closest
+to `library(shiny)`. It is usually better to avoid this in Rhino modules
+because the goal is to keep each file's dependencies clear.
+
+# Importing local Rhino modules
+
+The same `box::use()` syntax also imports local files from the Rhino
+project.
+
+This line imports a local module:
+
+```{r, eval=FALSE}
+box::use(
+  app/view/scatter
+)
+```
+
+It points to a file such as:
+
+```default
+app/view/scatter.R
+```
+
+After that import, the module is available as `scatter`. The functions
+defined in that file are accessed with `$`:
+
+```{r, eval=FALSE}
+scatter$ui("cars")
+scatter$server("cars", cars)
+```
+
+In this tutorial, `scatter.R` defines two functions:
+
+- `ui()` creates the Shiny UI for the feature
+- `server()` creates the Shiny server logic for the feature
+
+So `scatter$ui()` means:
+
+> use the `ui()` function from the `scatter` module
+
+And `scatter$server()` means:
+
+> use the `server()` function from the `scatter` module
+
+This is the main reason `box` fits Rhino well. Each Shiny feature can be
+a regular `.R` file, and the main app can import those feature files as
+modules.
+
+# Using the module in the app
+
+The main app file imports the module and calls its UI and server pieces.
+
+For example, a file like `app/main.R` might contain:
+
+```{r, eval=FALSE}
+box::use(
+  shiny[fluidPage, moduleServer, reactive, titlePanel],
+  app/view/scatter
+)
+
+ui <- function(id) {
+  fluidPage(
+    titlePanel("Rhino Shiny app"),
+    scatter$ui("cars")
+  )
+}
+
+server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    cars <- reactive(mtcars)
+    scatter$server("cars", cars)
+  })
+}
+```
+
+The main app now reads more like a table of contents. It tells us which
+features are used, but the feature code lives elsewhere.
+
+# Standard Shiny versus Rhino
+
+| Topic | Standard Shiny | Rhino |
+|---|---|---|
+| Best starting point | One `app.R` file | A project scaffold |
+| App size | Small to medium | Medium to large |
+| Learning curve | Lower | Higher |
+| File structure | Flexible | Opinionated |
+| Modules | Optional | Expected |
+| Testing | Possible, but you decide how | Encouraged from the start |
+| Team work | Can become messy | Easier to organize |
+| Tooling | Add as needed | Built into the project workflow |
+
+The tradeoff is simple:
+
+- standard Shiny is faster for small apps
+- Rhino is better when structure matters more than speed of setup
+
+# When should you use Rhino?
+
+Use Rhino when at least a few of these are true:
+
+- the app will be maintained for months or years
+- more than one developer will work on it
+- the app has many modules or pages
+- the app has important business logic
+- the app needs automated tests
+- the app will be deployed repeatedly
+- you want consistent style, linting, and project conventions
+- the app is closer to a product than a prototype
+
+Rhino is especially useful for production Shiny apps. In that setting,
+the app is not just a script. It is software that needs maintenance,
+review, testing, and deployment.
+
+# When should you stay with standard Shiny?
+
+Stay with standard Shiny when:
+
+- the app is a quick prototype
+- the app is for a one-time analysis
+- the app has only one or two screens
+- the app is owned by one person
+- the app logic is simple
+- the team is still learning basic Shiny
+
+For a small app, Rhino can feel like extra ceremony. That is not a Rhino
+problem. It means the app does not need that much structure yet.
+
+# A practical rule
+
+Start with standard Shiny when you are exploring.
+
+Move toward Rhino when the app becomes something people depend on.
+
+One practical signal is when you start saying:
+
+> I am afraid to change this file because I do not know what else it
+> affects.
+
+That is a good time to add stronger structure. Rhino gives you that
+structure.
+
+# Small exercise
+
+Take this small standard Shiny app:
+
+```{r, eval=FALSE}
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Iris summary"),
+  selectInput("species", "Species", unique(iris$Species)),
+  tableOutput("summary")
+)
+
+server <- function(input, output, session) {
+  filtered <- reactive({
+    iris[iris$Species == input$species, ]
+  })
+
+  output$summary <- renderTable({
+    data.frame(
+      rows = nrow(filtered()),
+      mean_sepal_length = mean(filtered()$Sepal.Length),
+      mean_petal_length = mean(filtered()$Petal.Length)
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+Practice questions:
+
+- What code belongs to the feature?
+- What code belongs to app startup?
+- What would you put in a module file?
+- What behavior would be worth testing?
+
+A reasonable module boundary is the iris summary feature:
+
+- `ui(id)` creates the species selector and summary table
+- `server(id, data)` filters the data and renders the table
+- a separate helper function could calculate the summary values
+
+# Key takeaways
+
+- Rhino is not a different kind of Shiny app. It is a structured way to
+  build Shiny apps.
+- Standard Shiny is best for small apps, learning, prototypes, and simple
+  dashboards.
+- Rhino is best for larger apps that need maintainability, tests, team
+  development, and production discipline.
+- Do not choose Rhino because it is more advanced. Choose it when the app
+  needs the structure.
