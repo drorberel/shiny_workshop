@@ -26,8 +26,22 @@ frame. The important part is the shape of the code:
 
 - an R function prepares data for the browser
 - a JavaScript binding renders the widget
-- Shiny calls the same R function with `renderMiniBars()`
+- Shiny calls the same R function with `rendermy_widget()`
 - Crosstalk filters can hide and show rows in the widget
+
+
+
+## Introduction
+You may have already used htmlwidgets in R, such as `leaflet`, `plotly`, or `DT`. These widgets are built using a combination of R and JavaScript. In this lesson, we will create a simple custom htmlwidget that displays horizontal bars based on a data frame.
+
+There are three main components to creating a custom htmlwidget:
+the JS binding, the R function, and the Shiny integration. The JS binding is responsible for rendering the widget in the browser, while the R function prepares the data for the browser. The Shiny integration allows us to use the widget in a Shiny app.
+
+Specifically, we will need these functions:
+xx.JS
+my_widget_Output() (the euivalent of DT::DTOutput())
+render_my_widget() (the equivalent of DT::renderDT())
+
 
 ## Packages
 
@@ -54,23 +68,23 @@ file under `inst/htmlwidgets/`. For a proof of concept, an inline
 `<script>` tag keeps everything in one lesson file.
 
 ```{r}
-mini_bars_binding <- function() {
+my_widget_JS <- function() {
   tags$script(HTML(
     "
-(function registerMiniBarsBinding() {
+(function registermy_widgetBinding() {
   if (!window.HTMLWidgets) {
-    setTimeout(registerMiniBarsBinding, 20);
+    setTimeout(registermy_widgetBinding, 20);
     return;
   }
 
-  if (window.miniBarsBindingRegistered) {
+  if (window.my_widgetBindingRegistered) {
     return;
   }
 
-  window.miniBarsBindingRegistered = true;
+  window.my_widgetBindingRegistered = true;
 
 HTMLWidgets.widget({
-  name: 'miniBars',
+  name: 'my_widget',
   type: 'output',
 
   factory: function(el, width, height) {
@@ -181,7 +195,7 @@ HTMLWidgets.widget({
   ))
 }
 
-mini_bars <- function(data, label, value, width = "100%", height = 260) {
+my_widget_bind <- function(data, label, value, width = "100%", height = 260) {
   label_name <- deparse(substitute(label))
   value_name <- deparse(substitute(value))
 
@@ -204,7 +218,7 @@ mini_bars <- function(data, label, value, width = "100%", height = 260) {
   })
 
   htmlwidgets::createWidget(
-    name = "miniBars",
+    name = "my_widget",
     x = list(rows = rows, group = group),
     width = width,
     height = height,
@@ -212,24 +226,24 @@ mini_bars <- function(data, label, value, width = "100%", height = 260) {
   )
 }
 
-miniBarsOutput <- function(outputId, width = "100%", height = "260px") {
+my_widgetOutput <- function(outputId, width = "100%", height = "260px") {
   htmlwidgets::shinyWidgetOutput(
     outputId = outputId,
-    name = "miniBars",
+    name = "my_widget",
     width = width,
     height = height,
     package = "htmlwidgets"
   )
 }
 
-renderMiniBars <- function(expr, env = parent.frame(), quoted = FALSE) {
+rendermy_widget <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) {
     expr <- substitute(expr)
   }
 
   htmlwidgets::shinyRenderWidget(
     expr = expr,
-    outputFunction = miniBarsOutput,
+    outputFunction = my_widgetOutput,
     env = env,
     quoted = TRUE
   )
@@ -249,8 +263,8 @@ fruit <- data.frame(
 )
 
 tagList(
-  mini_bars_binding(),
-  mini_bars(fruit, fruit, value)
+  my_widget_JS(),
+  my_widget_bind(fruit, fruit, value)
 )
 ```
 
@@ -259,8 +273,8 @@ tagList(
 In Shiny, the pattern is the same as other htmlwidgets:
 
 - put the JavaScript binding in the UI once
-- place `miniBarsOutput()` where the widget should appear
-- return `mini_bars()` from `renderMiniBars()`
+- place `my_widgetOutput()` where the widget should appear
+- return `my_widget_bind()` from `rendermy_widget()`
 
 This chunk is marked `eval=FALSE`, so the rendered Quarto document shows
 the app source code instead of launching a Shiny app while rendering. Run
@@ -278,19 +292,19 @@ fruit <- data.frame(
 )
 
 ui <- fluidPage(
-  mini_bars_binding(),
+  my_widget_JS(),
   titlePanel("Custom htmlwidget"),
   sliderInput("scale", "Scale values", min = 1, max = 5, value = 1),
-  miniBarsOutput("bars", height = "280px")
+  my_widgetOutput("bars", height = "280px")
 )
 
 server <- function(input, output, session) {
-  output$bars <- renderMiniBars({
+  output$bars <- rendermy_widget({
     scaled_fruit <- fruit
     scaled_fruit$value[scaled_fruit$fruit == "Banana"] <-
       scaled_fruit$value[scaled_fruit$fruit == "Banana"] * input$scale
 
-    mini_bars(scaled_fruit, fruit, value)
+    my_widget_bind(scaled_fruit, fruit, value)
   })
 }
 
@@ -319,7 +333,7 @@ shared_fruit <- SharedData$new(
 )
 
 tagList(
-  mini_bars_binding(),
+  my_widget_JS(),
   bscols(
     widths = c(3, 9),
     list(
@@ -338,7 +352,7 @@ tagList(
         step = 1
       )
     ),
-    mini_bars(shared_fruit, fruit, value)
+    my_widget_bind(shared_fruit, fruit, value)
   )
 )
 ```
@@ -354,8 +368,8 @@ This final example uses all three parts together:
 Without the crosstalk filters in the left column, the bars and table in the right column would not respond to user input. With the filters, users can hide and show rows in both the table and the custom widget at the same time.
 
 Save this as `app.R`, or run it from an R session after defining
-`mini_bars_binding()`, `mini_bars()`, `miniBarsOutput()`, and
-`renderMiniBars()`.
+`my_widget_JS()`, `my_widget_bind()`, `my_widgetOutput()`, and
+`rendermy_widget()`.
 
 ```{r, eval=FALSE}
 library(shiny)
@@ -377,7 +391,7 @@ shared_fruit <- SharedData$new(
 )
 
 corsstalk_ui <- fluidPage(
-  mini_bars_binding(),
+  my_widget_JS(),
   titlePanel("Shiny + Crosstalk + custom htmlwidget"),
   fluidRow(
     column(
@@ -399,15 +413,15 @@ corsstalk_ui <- fluidPage(
     ),
     column(
       width = 9,
-      miniBarsOutput("bars", height = "280px"),
+      my_widgetOutput("bars", height = "280px"),
       DTOutput("table")
     )
   )
 )
 
 corsstalk_server <- function(input, output, session) {
-  output$bars <- renderMiniBars({
-    mini_bars(shared_fruit, fruit, value)
+  output$bars <- rendermy_widget({
+    my_widget_bind(shared_fruit, fruit, value)
   })
 
   output$table <- renderDT({
